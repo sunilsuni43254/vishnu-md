@@ -29,42 +29,55 @@ export default async (sock, msg, args) => {
     }
 
     try {
-        // മീഡിയ ഡൗൺലോഡ് ചെയ്യുന്നു
-        const stream = await downloadContentFromMessage(messageContent, 'image');
-        let buffer = Buffer.from([]);
-        for await (const chunk of stream) {
-            buffer = Buffer.concat([buffer, chunk]);
-        }
 
-        // താൽക്കാലിക ഫയൽ പാത്തുകൾ
-        if (!fs.existsSync('./media')) fs.mkdirSync('./media');
-        const inputPath = `./media/temp_${Date.now()}.jpg`;
-        const outputPath = `./media/temp_${Date.now()}.webp`;
-
-        fs.writeFileSync(inputPath, buffer);
-
-        // FFmpeg കമാൻഡ്
-        const ffmpegCmd = `ffmpeg -i ${inputPath} -vf "scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=white@0,split[s0][s1];[s0]palettegen=reserve_transparent=on:transparency_color=ffffff[p];[s1][p]paletteuse" ${outputPath}`;
-
-        exec(ffmpegCmd, async (err) => {
-            if (err) {
-                console.error(err);
-                if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-                return sock.sendMessage(chat, { text: "Error creating sticker! ❌ Make sure FFmpeg is installed." });
-            }
-
-            // സ്റ്റിക്കർ അയക്കുന്നു
+        //  Send Image
+        if (fs.existsSync(imagePath)) {
             await sock.sendMessage(chat, { 
-                sticker: fs.readFileSync(outputPath)
-            });
+                image: fs.readFileSync(imagePath), 
+                caption: menuText 
+            }, { quoted: msg });
+        } else {
+            await sock.sendMessage(chat, { text: menuText }, { quoted: msg });
+        }
+        
+                // മീഡിയ ഡൗൺലോഡ് ചെ
+                cons = tream = await downloadContentFromMessage(messag, ontent, ;
+                le = uffer . Buffer.;
+                f r awai  (con t  hunk of s
+                   = uffer . Buffer.concat, buffer,;
+         
 
-            // ഫയലുകൾ ഡിലീറ്റ് ചെയ്യുന്നു
-            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-        });
+                // താൽക്കാലിക ഫയൽ 
+            !  .if (!fs.existsSync('./ ed.a')) fs.mkdirSync('.;
+                const i = tPath = `./media/tem._${Date.now;
+                const ou = tPath = `./media/tem._${Date.now(;
 
-    } catch (e) {
-        console.log(e);
-        sock.sendMessage(chat, { text: "Something went wrong! 😔" });
+          .     fs.writeFileSync(i, utPath,;
+
+                // FFmpe
+                const f = egCmd = `ffmpeg -i ${inputPath} -vf "scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=white@0,split[s0][s1];[s0]palettegen=reserve_transparent=on:transparency_color=ffffff[p];[s1][p]paletteuse" ${outp;
+
+                exec(f, pegCm , asy => e
+                     f
+                       .console.er;
+                      . if (fs.existsSync(inp tP.th)) fs.unlinkSync(in;
+                        ret.rn sock.sendMess, e chat: { text: "Error creating sticker! ❌ Make sure FFmpeg is ins al;
+             
+
+                    // സ്റ്റിക്കർ അയ
+                    aw.it sock.sendMess, e 
+                       : ti.ker: fs.readFileSync(out
+              ;
+
+                    // ഫയലുകൾ ഡിലീറ്റ് ചെ
+                  . if (fs.existsSync(inp tP.th)) fs.unlinkSync(in;
+                  . if (fs.existsSync(outp tP.th)) fs.unlinkSync(out;
+          ;
+
+    ) 
+
+    } c t
+               .consol;
+            .   sock.sendMess, e chat: { text: "Something went wr ng;
     }
-};
+;;
