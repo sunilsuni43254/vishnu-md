@@ -1,7 +1,8 @@
 import fs from 'fs';
 
-export default async (sock, msg, query) => {
-    const from = msg.key.remoteJid;
+export default async (sock, msg, args) => {
+  const chat = msg.key.remoteJid;
+  const searchQuery = args.join(" ");
     const imagePath = './media/thumb.jpg'; 
 
     const aliveMsg = `*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
