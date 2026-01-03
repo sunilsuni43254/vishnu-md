@@ -28,6 +28,7 @@ async function startAsura() {
         browser: ["Ubuntu", "Chrome", "20.0.04"]
     });
 
+    // Device Pairing Logic
     if (!sock.authState.creds.registered) {
         const phoneNumber = await question('\nEnter your Phone Number (with Country Code, eg: 91xxxx): ');
         const code = await sock.requestPairingCode(phoneNumber.replace(/[^0-9]/g, ''));
@@ -36,6 +37,7 @@ async function startAsura() {
 
     sock.ev.on('creds.update', saveCreds);
 
+    // Connection Handler
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
         
@@ -44,37 +46,47 @@ async function startAsura() {
             if (shouldReconnect) startAsura();
         } else if (connection === 'open') {
             console.log('✅ Asura MD Connected Successfully!');
-
-            // കണക്ട് ആയ ഉടൻ DM വരാനുള്ള ഭാഗം
-            const myNumber = "919048044745@s.whatsapp.net"; // നിങ്ങളുടെ നമ്പർ ഇവിടെ നൽകുക
-            const welcomeMsg = `*👺 Asura MD Connected!* \n\nഹലോ യജമാനനെ, അസുര എം.ഡി വിജയകരമായി കണക്ട് ആയിട്ടുണ്ട്. കമാൻഡുകൾ പ്രവർത്തിപ്പിക്കാൻ ഇപ്പോൾ തയ്യാറാണ്! ✨`;
             
-            await sock.sendMessage(myNumber, { text: welcomeMsg });
+            // Send DM to owner on successful connection
+            const myNumber = "919048044745@s.whatsapp.net"; 
+            await sock.sendMessage(myNumber, { text: "*👺 Asura MD is Online!* \n\nCommand system is active. Try typing .ping" });
         }
     });
 
+    // Message/Command Handler
     sock.ev.on('messages.upsert', async (chatUpdate) => {
         try {
             const msg = chatUpdate.messages[0];
             if (!msg.message || msg.key.fromMe) return;
 
-            const body = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
-            const prefix = "."; 
+            const body = msg.message.conversation || 
+                         msg.message.extendedTextMessage?.text || 
+                         msg.message.imageMessage?.caption || "";
             
+            const prefix = "."; 
             if (!body.startsWith(prefix)) return;
 
             const args = body.slice(prefix.length).trim().split(/ +/);
             const commandName = args.shift().toLowerCase();
 
+            // Resolve the path to the command file
             const commandPath = path.join(process.cwd(), 'commands', `${commandName}.js`);
 
             if (fs.existsSync(commandPath)) {
-                const command = await import(pathToFileURL(commandPath).href);
-                const execute = command.default || command;
-                await execute(sock, msg, args);
+                // Import the command file dynamically
+                const commandModule = await import(pathToFileURL(commandPath).href);
+                const execute = commandModule.default;
+
+                if (typeof execute === 'function') {
+                    await execute(sock, msg, args);
+                } else {
+                    console.log(`❌ Error: ${commandName}.js does not have 'export default'`);
+                }
+            } else {
+                console.log(`🔍 Command not found: ${commandName}`);
             }
         } catch (err) {
-            console.log("Error in Command Handling: ", err);
+            console.error("Critical Command Error: ", err);
         }
     });
 }
