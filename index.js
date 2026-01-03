@@ -36,35 +36,39 @@ async function startAsura() {
 
     sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('connection.update', (update) => {
+    sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
+        
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
             if (shouldReconnect) startAsura();
         } else if (connection === 'open') {
             console.log('✅ Asura MD Connected Successfully!');
+
+            // കണക്ട് ആയ ഉടൻ DM വരാനുള്ള ഭാഗം
+            const myNumber = "919048044745@s.whatsapp.net"; // നിങ്ങളുടെ നമ്പർ ഇവിടെ നൽകുക
+            const welcomeMsg = `*👺 Asura MD Connected!* \n\nഹലോ യജമാനനെ, അസുര എം.ഡി വിജയകരമായി കണക്ട് ആയിട്ടുണ്ട്. കമാൻഡുകൾ പ്രവർത്തിപ്പിക്കാൻ ഇപ്പോൾ തയ്യാറാണ്! ✨`;
+            
+            await sock.sendMessage(myNumber, { text: welcomeMsg });
         }
     });
 
-    // കമാൻഡുകൾ റീഡ് ചെയ്യുന്ന ഭാഗം
     sock.ev.on('messages.upsert', async (chatUpdate) => {
         try {
             const msg = chatUpdate.messages[0];
             if (!msg.message || msg.key.fromMe) return;
 
             const body = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
-            const prefix = "."; // നിങ്ങളുടെ കമാൻഡ് പ്രിഫിക്സ്
+            const prefix = "."; 
             
             if (!body.startsWith(prefix)) return;
 
             const args = body.slice(prefix.length).trim().split(/ +/);
             const commandName = args.shift().toLowerCase();
 
-            // കമാൻഡ് ഫയൽ commands ഫോൾഡറിൽ ഉണ്ടോ എന്ന് നോക്കുന്നു
             const commandPath = path.join(process.cwd(), 'commands', `${commandName}.js`);
 
             if (fs.existsSync(commandPath)) {
-                // ഫയൽ ഇമ്പോർട്ട് ചെയ്യുന്നു
                 const command = await import(pathToFileURL(commandPath).href);
                 const execute = command.default || command;
                 await execute(sock, msg, args);
