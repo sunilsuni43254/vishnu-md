@@ -34,12 +34,13 @@ export default async (sock, msg, args) => {
         await sock.sendMessage(chat, { text: `Searching for *${imageName}*... 🔍` });
 
         // Using a public API for image searching
-        const response = await axios.get(`https://api.fdci.se/sosmed/rep.php?gambar=${imageName}`);
-        const results = response.data;
+        const apiUrl = `https://api.vreden.my.id/api/bingimg?query=${encodeURIComponent(imageName)}`;
+        const response = await axios.get(apiUrl);
         
-        if (results.length > 0) {
-            // Pick a random image from top 10 results
-            const randomImg = results[Math.floor(Math.random() * Math.min(results.length, 10))];
+        // API response structure അനുസരിച്ച് image URL എടുക്കുന്നു
+        if (response.data.status === 200 && response.data.result.length > 0) {
+            const results = response.data.result;
+            const randomImg = results[Math.floor(Math.random() * results.length)];
             
             await sock.sendMessage(chat, { 
                 image: { url: randomImg }, 
