@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-export default async (sock, msg, query) => {
+export default async (sock, msg, args) => {
     const from = msg.key.remoteJid;
     const imagePath = './media/thumb.jpg'; 
 
@@ -43,10 +43,11 @@ export default async (sock, msg, query) => {
             await sock.sendMessage(from, { 
                 image: fs.readFileSync(imagePath), 
                 caption: gameMsg 
-            });
+                        }, { quoted: msg });
         } else {
-            await sock.sendMessage(from, { text: gameMsg });
+            await sock.sendMessage(from, { text: gameMsg }, { quoted: msg });
         }
+
 
         // 5. സക്സസ് റിയാക്ഷൻ
         await sock.sendMessage(from, { react: { text: "✅", key: msg.key } });
