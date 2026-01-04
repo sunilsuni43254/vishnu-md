@@ -1,7 +1,6 @@
 import fs from 'fs';
 
 export default async (sock, msg, args) => {
-const searchQuery = args.join(" ");
 const chat = msg.key.remoteJid;
 const imagePath = './media/thumb.jpg'; 
 const songPath = './media/song.ogg'; 
@@ -11,7 +10,7 @@ const songPath = './media/song.ogg';
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
 *⊹* 🪔 *ᴡʜᴀᴛꜱᴀᴘᴘ ᴍɪɴɪ ʙᴏᴛ*
-*✧* 「 \`👺Asura MD\` 」
+*✧* 「 👺Asura MD 」
 *╰─────────────────❂*
 ╔━━━━━━━━━━━━━❥❥❥
 ┃ *⊙  .Ping*
