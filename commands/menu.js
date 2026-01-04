@@ -1,9 +1,9 @@
-import fs from 'fs';
+Import fs from 'fs';
 
 export default async (sock, msg, args) => {
 const chat = msg.key.remoteJid;
 const imagePath = './media/thumb.jpg'; 
-const songPath = './media/song.ogg'; 
+const songPath = './media/song.oga'; 
 
     const menuText = `*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
@@ -44,7 +44,7 @@ const songPath = './media/song.ogg';
         if (fs.existsSync(songPath)) {
             await sock.sendMessage(chat, { 
                 audio: fs.readFileSync(songPath), 
-                mimetype: 'audio/mpeg',
+                mimetype: 'audio/ogg; codecs=opus',
                 ptt: false 
             }, { quoted: msg });
         }
