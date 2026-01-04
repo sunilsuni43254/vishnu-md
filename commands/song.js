@@ -19,20 +19,24 @@ export default async (sock, msg, args) => {
     const video = search.videos[0];
     if (!video) return sock.sendMessage(chat, { text: "❌ Song Not Found!" });
 
-    const infoText = `*👺⃝⃘̉̉̉━━━━━━━━━━━◆◆◆*
+    const infoText = `*👺⃝⃘̉̉̉━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
 *⊹* 🪔 *Song Download*
 *✧* 「 \`👺Asura MD\` 」
-*╰─────────────────❂*
+*╰───────────────❂*
 ╭•°•❲ *Downloading...* ❳•°•
  ⊙🎬 *TITLE:* ${video.title}
  ⊙📺 *CHANNEL:* ${video.author.name}
  ⊙👀 *VIEWS:* ${video.views}
  ⊙⏳ *DURATION:* ${video.timestamp}
 *◀︎ •၊၊||၊||||။‌၊||••*
-╰╌╌╌╌╌╌╌╌╌╌╌╌࿐
+╰╌╌╌╌╌╌╌╌╌╌࿐
+╔━━━━━━━━━━━❥❥❥ 
+┃ 1️⃣ Audio 🔊
+┃ 2️⃣ Voice 🎤
+╚━━━━⛥❖⛥━━━━❥❥❥
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
