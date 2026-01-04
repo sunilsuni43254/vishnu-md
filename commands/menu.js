@@ -20,7 +20,7 @@ const songPath = './media/song.ogg';
 ┃ *⊙  .Video  <name>*
 ┃ *⊙  .sticker*
 ┃ *⊙  .Game*
-┃ *⊙  .Pair   <91XXXXXXXXXX>* 
+┃ *⊙  .image <query>* 
 ┃ °☆°☆°☆°☆°☆°☆°☆°☆°☆°☆°
 ╠━━━━━━━━━━━━━❥❥❥
 ┃ *owner* arun.Cumar 
