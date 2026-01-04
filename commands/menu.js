@@ -22,6 +22,7 @@ const songPath = './media/song.oga';
 ┃ *⊙  .Game*
 ┃ *⊙  .Owner*
 ┃ *⊙  .Play <name>*
+┃ *⊙  .Tagall*
 ┃ *⊙  .Image <name>* 
 ┃ °☆°☆°☆°☆°☆°☆°☆°☆°☆°☆°
 ╠━━━━━━━━━━━━━❥❥❥
