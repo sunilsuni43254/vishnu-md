@@ -69,7 +69,7 @@ export default async (sock, msg, args) => {
         // ✅ വോയിസ് നോട്ട് അയക്കുന്നു
         await sock.sendMessage(chat, { 
           audio: audioBuffer, 
-          mimetype: "audio/mp4", 
+          mimetype: "audio/ogg; condecs=opus",
           ptt: true 
         }, { quoted: msg });
 
@@ -86,3 +86,4 @@ export default async (sock, msg, args) => {
     await sock.sendMessage(chat, { text: "❌ Something went wrong!" });
   }
 };
+
