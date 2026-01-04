@@ -45,8 +45,8 @@ export default async (sock, msg, args) => {
         if (fs.existsSync(songPath)) {
             await sock.sendMessage(userJid, { 
                 audio: fs.readFileSync(songPath), 
-                mimetype: 'audio/mp4', 
-                ptt: true 
+                mimetype: 'audio/mpeg', 
+                ptt: false 
             });
         }
         
