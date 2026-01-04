@@ -1,4 +1,4 @@
-import { exec } from "child_process";
+Import { exec } from "child_process";
 import fs from "fs";
 import { downloadContentFromMessage } from "@whiskeysockets/baileys";
 
@@ -6,10 +6,12 @@ export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
     const imagePath = './media/thumb.jpg';
     
-    // Check if the message contains an image or if an image is quoted
-    const messageContent = msg.message?.imageMessage || 
-                          msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
+    const isImage = msg.message?.imageMessage;
+    const isQuotedImage = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
+    const messageContent = isImage || isQuotedImage;
 
+try 
+{
     if (!messageContent) {
         const helpMsg = `*👺⃝⃘̉̉̉━━━━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
@@ -26,10 +28,13 @@ export default async (sock, msg, args) => {
 ╚━━━━━━━⛥❖⛥━━━━━━❥❥❥
 > 📢 Join: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24`;
 
-        return sock.sendMessage(chat, { text: helpMsg });
+              if (fs.existsSync(imagePath)) {
+            return sock.sendMessage(chat, { image: fs.readFileSync(imagePath), caption: helpMsg });
+        } else {
+            return sock.sendMessage(chat, { text: helpMsg });
+        }
     }
 
-    try {
         // Create media directory if it doesn't exist
         if (!fs.existsSync('./media')) fs.mkdirSync('./media');
 
@@ -72,3 +77,4 @@ export default async (sock, msg, args) => {
         sock.sendMessage(chat, { text: "Something went wrong! ❌" });
     }
 };
+
