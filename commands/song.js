@@ -15,7 +15,7 @@ export default async (sock, msg, args) => {
   }
 
   try {
-    // 1. യൂട്യൂബിൽ തിരയുന്നു (searchQuery തന്നെ ഇവിടെ നൽകണം)
+    // 1. യൂട്യൂബിൽ തിരയുന്നു
     const search = await yts(searchQuery);
     const video = search.videos[0];
     if (!video) return sock.sendMessage(chat, { text: "❌ Song Not Found!" });
@@ -39,7 +39,7 @@ export default async (sock, msg, args) => {
 ╔━━━━━━━━━━━
 ┃ 2️⃣ Voice 🎤
 ╚━━━━⛥❖⛥━━━━❥❥❥
-> 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
+> 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENhoI5l24
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
     // 2. തംബ്‌നെയിൽ മെസ്സേജ് അയക്കുന്നു
@@ -49,10 +49,11 @@ export default async (sock, msg, args) => {
     });
 
     const fileName = `./media/audio_${Date.now()}.mp3`;
+    const voiceFileName = `./media/voice_${Date.now()}.opus`;
 
-    // 3. ഡൗൺലോഡ് പ്രോസസ്സ് (Promisified exec ഉപയോഗിക്കുന്നു)
     try {
-      await execPromise(`yt-dlp -x --audio-format mp3 --audio-quality 0 "${video.url}" -o "${fileName}"`);
+      // 🚀 Render-ൽ yt-dlp python മൊഡ്യൂൾ ആയി റൺ ചെയ്യുന്നു
+      await execPromise(`python3 -m yt_dlp -x --audio-format mp3 --audio-quality 0 "${video.url}" -o "${fileName}"`);
       
       if (fs.existsSync(fileName)) {
         const stats = fs.statSync(fileName);
@@ -64,50 +65,47 @@ export default async (sock, msg, args) => {
         }
 
         const audioBuffer = fs.readFileSync(fileName);
-        const thumbRes = await axios.get(video.thumbnail,        { responseType: 'arraybuffer' });
-        const thumbBuffer = Buffer.from(thumbRes.data); // 'utf-8'
-        const voiceFileName = `./media/voice_${Date.now()}.opus`;
+        const thumbRes = await axios.get(video.thumbnail, { responseType: 'arraybuffer' });
+        const thumbBuffer = Buffer.from(thumbRes.data);
+
+        // FFmpeg ഉപയോഗിച്ച് വോയിസ് നോട്ട് ആക്കുന്നു
         await execPromise(`ffmpeg -i "${fileName}" -c:a libopus -ar 16000 -ac 1 "${voiceFileName}"`);
 
-        if (fs.existsSync(voiceFileName)) {
-            const voiceBuffer = fs.readFileSync(voiceFileName);
-          
         // ✅ ഓഡിയോ ഫയൽ അയക്കുന്നു
         await sock.sendMessage(chat, { 
           audio: audioBuffer,  
           mimetype: "audio/mpeg",
           fileName: `${video.title}.mp3`,
-           contextInfo: {
+          contextInfo: {
             externalAdReply: {
               title: video.title,
               body: 'Asura MD 👺',
               thumbnail: thumbBuffer,
-              thumbnailUrl: video.thumbnail,
               mediaType: 1,
               sourceUrl: video.url,
               renderLargerThumbnail: true,
-             }
+            }
           }
         }, { quoted: msg });
 
         // ✅ വോയിസ് നോട്ട് അയക്കുന്നു
-        await sock.sendMessage(chat, { 
-          audio: voiceBuffer, 
-          mimetype: "audio/ogg; codecs=opus",
-          ptt: true ,
-           contextInfo: {
-            externalAdReply: {
-              title: video.title,
-              body: 'Asura MD 👺',
-              thumbnail: thumbBuffer,
-              thumbnailUrl: video.thumbnail,
-              mediaType: 1,
-              sourceUrl: video.url,
-              renderLargerThumbnail: true,
+        if (fs.existsSync(voiceFileName)) {
+          const voiceBuffer = fs.readFileSync(voiceFileName);
+          await sock.sendMessage(chat, { 
+            audio: voiceBuffer, 
+            mimetype: "audio/ogg; codecs=opus",
+            ptt: true,
+            contextInfo: {
+              externalAdReply: {
+                title: video.title,
+                body: 'Asura MD 👺',
+                thumbnail: thumbBuffer,
+                mediaType: 1,
+                sourceUrl: video.url,
+                renderLargerThumbnail: true,
               }
             }
           }, { quoted: msg });
-
           fs.unlinkSync(voiceFileName); 
         }
         
@@ -115,10 +113,11 @@ export default async (sock, msg, args) => {
       }
     } catch (execError) {
       console.error(execError);
-      return sock.sendMessage(chat, { text: "❌ Error during processing!" });
+      return sock.sendMessage(chat, { text: "❌ Error during processing! Make sure yt-dlp is installed." });
     }
   } catch (e) {
     console.error(e);
     await sock.sendMessage(chat, { text: "❌ Something went wrong!" });
   }
 };
+
