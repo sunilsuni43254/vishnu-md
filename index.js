@@ -10,6 +10,14 @@ import path from "path";
 import { pathToFileURL } from 'url';
 import readline from "readline";
 import express from "express"; // Render-ന് ആവശ്യമാണ്
+const sessionData = process.env.SESSION_ID;
+
+if (sessionData) {
+    if (!fs.existsSync('./session')) fs.mkdirSync('./session');
+    
+    fs.writeFileSync('./session/creds.json', sessionData);
+    console.log("✅ Session file created from Environment Variable");
+}
 
 // 1. Setup Express Server for Render
 const app = express();
