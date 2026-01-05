@@ -5,8 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "build": "apt-get update && apt-get install -y ffmpeg && python3 -m pip install yt-dlp"
+    "start": "node index.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "latest",
@@ -16,8 +15,6 @@
     "axios": "^1.6.7",
     "fs-extra": "^11.2.0",
     "express": "latest",
-    "readline": "latest",
-    "link-preview-js": "latest",
     "fluent-ffmpeg": "^2.1.2",
     "ffmpeg-static": "latest", 
     "jimp": "latest",
