@@ -5,10 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-  "start": "node index.js",
-  "build": "apt-get update && apt-get install -y ffmpeg && python3 -m pip install yt-dlp"
-}
-
+    "start": "node index.js",
+    "build": "apt-get update && apt-get install -y ffmpeg && python3 -m pip install yt-dlp"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "latest",
