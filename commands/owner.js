@@ -24,7 +24,7 @@ export default async (sock, msg, args) => {
                 'VERSION:3.0\n' + 
                 'FN:Arun Cumar\n' + 
                 'ORG:Asura MD;\n' + 
-                'TEL;type=CELL;type=VOICE;waid=919048044745:+91 90480 44745\n' + 
+                'TEL;type=CELL;type=VOICE;waid=917736811908:+91 7736811908\n' + 
                 'END:VCARD';
 
     if (fs.existsSync(thumbPath)) {
