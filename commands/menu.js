@@ -3,7 +3,7 @@ import fs from 'fs';
 export default async (sock, msg, args) => {
 const chat = msg.key.remoteJid;
 const imagePath = './media/thumb.jpg'; 
-const songPath = './media/song.oga'; 
+const songPath = './media/song.opus'; 
 
     const menuText = `*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
@@ -31,28 +31,39 @@ const songPath = './media/song.oga';
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD* > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24`;
 
     try {
-        // 1. Send Image
+        // 1. Send Image with Menu Text
         if (fs.existsSync(imagePath)) {
-            await sock.sendMessage(chat, { 
-                image: fs.readFileSync(imagePath), 
-                caption: menuText 
+            await sock.sendMessage(chat, {
+                image: fs.readFileSync(imagePath),
+                caption: menuText
             }, { quoted: msg });
         } else {
             await sock.sendMessage(chat, { text: menuText }, { quoted: msg });
         }
 
-        // 2. Send Audio (Voice Note)
+        // 2. Send Opus Audio (As Voice Note with Context Info)
         if (fs.existsSync(songPath)) {
-            await sock.sendMessage(chat, { 
-                audio: fs.readFileSync(songPath), 
-                mimetype: 'audio/ogg; codecs=opus',
-                ptt: false 
+            const audioBuffer = fs.readFileSync(songPath);
+
+            await sock.sendMessage(chat, {
+                audio: { url: songPath },
+                mimetype: "audio/ogg; codecs=opus",
+                ptt: true,
+                contextInfo: {
+                    externalAdReply: {
+                        title: 'Asura MD 👺',
+                        body: 'Playing Menu Theme...',
+                        thumbnail: fs.existsSync(imagePath) ? fs.readFileSync(imagePath) : null,
+                        mediaType: 1,
+                        sourceUrl: 'https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24'
+                    }
+                }
             }, { quoted: msg });
+        } else {
+            console.log("Menu audio file not found!");
         }
 
     } catch (error) {
         console.error("Error in menu command:", error);
     }
 };
-
-
