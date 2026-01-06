@@ -35,6 +35,6 @@ export default async (sock, msg, args) => {
     }
     
     await sock.sendMessage(chat, { 
-        contacts: { displayName: 'Arun Cumar', contacts: [{ vcard }] } 
+        contacts: { displayName: 'arun•°Cumar', contacts: [{ vcard }] } 
     }, { quoted: msg });
 };
