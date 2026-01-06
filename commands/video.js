@@ -1,6 +1,7 @@
 import yts from "yt-search";
-import axios from "axios";
+import ytdl from "ytdl-core";
 import fs from "fs";
+import path from "path";
 
 export default async (sock, msg, args) => {
   const chat = msg.key.remoteJid;
@@ -17,7 +18,8 @@ export default async (sock, msg, args) => {
     if (!video) {
       return sock.sendMessage(chat, { text: "Video Not Found 😢" });
     }
-    
+
+    // നിങ്ങളുടെ പഴയ അതേ ഡിസൈൻ
     const captionText = `*👺⃝⃘̉̉━━━━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
@@ -37,28 +39,29 @@ export default async (sock, msg, args) => {
 
     await sock.sendMessage(chat, { image: { url: video.thumbnail }, caption: captionText });
 
-    try {
-      //  API ഉപയോഗിക്കുന്നു
-      const apiUrl = `https://api.vkrhost.workers.dev/server?url=${video.url}`;
-      const response = await axios.get(apiUrl);
-      
-      // വീഡിയോ ഫയലിന്റെ ലിങ്ക് കണ്ടെത്തുന്നു (480p അല്ലെങ്കിൽ ഏറ്റവും നല്ലത്)
-      const downloadUrl = response.data.data.find(f => f.format === "mp4" || f.ext === "mp4")?.url;
+    const fileName = `./media/video_${Date.now()}.mp4`;
 
-      if (downloadUrl) {
-        await sock.sendMessage(chat, {
-          video: { url: downloadUrl },
-          mimetype: 'video/mp4',
-          caption: `*${video.title}*`
-        }, { quoted: msg });
-      } else {
-        await sock.sendMessage(chat, { text: "❌ ഡൗൺലോഡ് ലിങ്ക് ലഭ്യമല്ല! മറ്റൊരു വീഡിയോ ശ്രമിക്കൂ." });
-      }
+    // വീഡിയോ ഡൗൺലോഡ് ചെയ്യുന്നു (ytdl-core ഉപയോഗിച്ച്)
+    const stream = ytdl(video.url, {
+      quality: 'highestvideo',
+      filter: format => format.container === 'mp4' && format.hasAudio && format.hasVideo
+    }).pipe(fs.createWriteStream(fileName));
 
-    } catch (apiError) {
-      console.error("API Error:", apiError);
-      await sock.sendMessage(chat, { text: "Error downloading video! ❌\nAPI ഡൗൺലോഡിൽ പ്രശ്നമുണ്ട്." });
-    }
+    stream.on('finish', async () => {
+      await sock.sendMessage(chat, {
+        video: fs.readFileSync(fileName),
+        mimetype: 'video/mp4',
+        caption: `*${video.title}*`
+      }, { quoted: msg });
+
+      // അയച്ചതിന് ശേഷം ഫയൽ ഡിലീറ്റ് ചെയ്യുന്നു
+      if (fs.existsSync(fileName)) fs.unlinkSync(fileName);
+    });
+
+    stream.on('error', (err) => {
+      console.error("YTDL Error:", err);
+      sock.sendMessage(chat, { text: "ഡൗൺലോഡ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു! ❌" });
+    });
 
   } catch (err) {
     console.error("Main Error:", err);
