@@ -20,6 +20,7 @@ const songPath = './media/song.opus';
 ┃ *⊙  .Video  <name>*
 ┃ *⊙  .Sticker*
 ┃ *⊙  .Game*
+┃ *⊙  .Font <text>*
 ┃ *⊙  .Owner*
 ┃ *⊙  .Play <name>*
 ┃ *⊙  .Tagall*
