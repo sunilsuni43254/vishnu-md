@@ -1,6 +1,5 @@
 import yts from "yt-search";
-import ytdl from "ytdl-core";
-import fs from "fs";
+import ytdl from "@distube/ytdl-core"; 
 
 export default async (sock, msg, args) => {
   const chat = msg.key.remoteJid;
@@ -18,7 +17,6 @@ export default async (sock, msg, args) => {
       return sock.sendMessage(chat, { text: "Video Not Found 😢" });
     }
 
-    // ഡിസൈൻ ഒട്ടും മാറ്റമില്ലാതെ നിലനിർത്തുന്നു
     const captionText = `*👺⃝⃘̉̉━━━━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
@@ -36,36 +34,33 @@ export default async (sock, msg, args) => {
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
-    // ആദ്യം തംബ്‌നെയിലും വിവരങ്ങളും അയക്കുന്നു
+    // തംബ്‌നെയിൽ അയക്കുന്നു
     await sock.sendMessage(chat, { image: { url: video.thumbnail }, caption: captionText }, { quoted: msg });
 
-    const fileName = `./media/${Date.now()}.mp4`;
-
-    // വീഡിയോ സ്ട്രീം എടുക്കുന്നു (360p അല്ലെങ്കിൽ mp4 കിട്ടാൻ വേണ്ടിയുള്ള ഫിൽട്ടർ)
-    const videoStream = ytdl(video.url, {
-      filter: 'handy', // വീഡിയോയും ഓഡിയോയും ഒരുമിച്ച് കിട്ടാൻ (360p/480p)
-      quality: 'highest',
+    // വീഡിയോ ഡൗൺലോഡ് ചെയ്യാതെ നേരിട്ട് സ്ട്രീം ചെയ്യുന്നു
+    const stream = ytdl(video.url, {
+        filter: 'reverbDelay', // Video + Audio രണ്ടും ലഭിക്കാൻ
+        quality: 'highestvideo',
     });
 
-    const fileWriter = fs.createWriteStream(fileName);
-    videoStream.pipe(fileWriter);
-
-    fileWriter.on('finish', async () => {
-      // വീഡിയോ അയക്കുന്നു
-      await sock.sendMessage(chat, {
-        video: fs.readFileSync(fileName),
-        mimetype: 'video/mp4',
-        caption: `*${video.title}*`,
-        headerType: 4
-      }, { quoted: msg });
-
-      // അയച്ചതിന് ശേഷം ഫയൽ ഡിലീറ്റ് ചെയ്യുന്നു
-      if (fs.existsSync(fileName)) fs.unlinkSync(fileName);
+    // ബഫർ വഴി വീഡിയോ അയക്കുന്നു
+    let chunks = [];
+    stream.on('data', (chunk) => {
+        chunks.push(chunk);
     });
 
-    videoStream.on('error', (err) => {
-      console.error("YTDL Error:", err);
-      sock.sendMessage(chat, { text: "Error. ❌" });
+    stream.on('end', async () => {
+        const videoBuffer = Buffer.concat(chunks);
+        await sock.sendMessage(chat, {
+            video: videoBuffer,
+            mimetype: 'video/mp4',
+            caption: `*${video.title}*`
+        }, { quoted: msg });
+    });
+
+    stream.on('error', (err) => {
+        console.error("Stream Error:", err);
+        sock.sendMessage(chat, { text: "Error downloading video. ❌" });
     });
 
   } catch (err) {
@@ -73,3 +68,4 @@ export default async (sock, msg, args) => {
     await sock.sendMessage(chat, { text: "Something went wrong! 😢" });
   }
 };
+
