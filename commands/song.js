@@ -3,7 +3,9 @@ import { exec } from "child_process";
 import fs from "fs";
 import { promisify } from "util";
 import axios from "axios";
+import ffmpegPath from 'ffmpeg-static';
 
+const ffmpeg = ffmpegPath; 
 const execPromise = promisify(exec);
 
 export default async (sock, msg, args) => {
