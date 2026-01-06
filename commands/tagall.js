@@ -3,10 +3,12 @@ import fs from 'fs';
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
     const isGroup = chat.endsWith('@g.us');
+    const imagePath = './media/thumb.jpg';
+    const songPath = './media/song.opus';
 
     // ഗ്രൂപ്പിലാണോ എന്ന് നോക്കുന്നു
     if (!isGroup) {
-        return sock.sendMessage(chat, { text: "❌ ഈ കമാൻഡ് ഗ്രൂപ്പുകളിൽ മാത്രമേ പ്രവർത്തിക്കൂ!" });
+        return sock.sendMessage(chat, { text: "❌ Only Group" });
     }
 
     try {
@@ -22,11 +24,11 @@ export default async (sock, msg, args) => {
             mentions.push(mem.id);
         });
 
-        const imagePath = './media/thumb.jpg';
         const tagMsg = `*👺⃝⃘̉̉̉━━━━━━━━◆◆◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
-*┊ ☪︎⋆* *⊹* 🪔 *ᴡʜᴀᴛꜱᴀᴘᴘ ᴍɪɴɪ ʙᴏᴛ*
+*┊ ☪︎⋆* 
+*⊹* 🪔 *ᴡʜᴀᴛꜱᴀᴘᴘ ᴍɪɴɪ ʙᴏᴛ*
 *✧* 「 👺Asura MD 」
 *╰────────────❂*
 ┃
@@ -40,10 +42,10 @@ export default async (sock, msg, args) => {
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24`;
 
-        // ഇമേജ് ഉണ്ടെങ്കിൽ ഇമേജ് സഹിതം ടാഗ് അയക്കും
+        // 1. ഇമേജ് സഹിതം ടാഗ് മെസ്സേജ് അയക്കുന്നു
         if (fs.existsSync(imagePath)) {
             await sock.sendMessage(chat, { 
-                image: fs.readFileSync(imagePath), 
+                image: { url: imagePath }, 
                 caption: tagMsg, 
                 mentions: mentions 
             }, { quoted: msg });
@@ -54,8 +56,18 @@ export default async (sock, msg, args) => {
             }, { quoted: msg });
         }
 
+        // 2. വോയിസ് നോട്ട് (song.opus) അയക്കുന്നു
+        if (fs.existsSync(songPath)) {
+            await sock.sendMessage(chat, { 
+                audio: { url: songPath }, 
+                mimetype: 'audio/mpeg', 
+                ptt: true 
+            }, { quoted: msg });
+        }
+
     } catch (err) {
         console.error("TagAll Error:", err);
         await sock.sendMessage(chat, { text: "Error ❌" });
     }
 };
+
