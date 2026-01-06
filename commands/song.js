@@ -1,8 +1,8 @@
 import yts from "yt-search";
-import { exec } from "child_process";
-import fs from "fs";
-import { promisify } from "util";
 import axios from "axios";
+import fs from "fs";
+import { exec } from "child_process";
+import { promisify } from "util";
 import ffmpegPath from 'ffmpeg-static';
 
 const execPromise = promisify(exec);
@@ -20,6 +20,7 @@ export default async (sock, msg, args) => {
     const video = search.videos[0];
     if (!video) return sock.sendMessage(chat, { text: "❌ Song Not Found!" });
 
+    // നിങ്ങൾ തന്ന അതേ ഡിസൈൻ
     const infoText = `*👺⃝⃘̉̉━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
@@ -48,78 +49,80 @@ export default async (sock, msg, args) => {
     });
 
     if (!fs.existsSync('./media')) fs.mkdirSync('./media');
-
     const fileName = `./media/audio_${Date.now()}.mp3`;
     const voiceFileName = `./media/voice_${Date.now()}.opus`;
 
-    try {
-      // ✅ കുക്കീസ് ഇല്ലാതെ Render-ൽ വർക്ക് ആകാൻ --user-agent ചേർത്തു
-      // --no-check-certificates സർട്ടിഫിക്കറ്റ് എറർ ഒഴിവാക്കും
-      const ytDlpCommand = `python3 -m yt_dlp --no-check-certificates --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36" -x --audio-format mp3 --audio-quality 0 "${video.url}" -o "${fileName}"`;
-      
-      await execPromise(ytDlpCommand);
+    // ✅ API വഴി ഡൗൺലോഡ് ലിങ്ക് എടുക്കുന്നു (Cookies ആവശ്യമില്ല)
+    const apiRes = await axios.get(`https://api.vkrhost.workers.dev/server?url=${video.url}`);
+    const downloadUrl = apiRes.data.data.find(f => f.format === "mp3" || f.ext === "mp3")?.url || apiRes.data.data[0].url;
 
-      if (fs.existsSync(fileName)) {
-        const stats = fs.statSync(fileName);
-        const fileSizeMB = stats.size / (1024 * 1024);
+    if (!downloadUrl) throw new Error("Could not fetch download link");
 
-        if (fileSizeMB > 100) {
-          if (fs.existsSync(fileName)) fs.unlinkSync(fileName);
-          return sock.sendMessage(chat, { text: "❌ File is too large (Over 100MB)!" });
+    // ഫയൽ താൽക്കാലികമായി ഡൗൺലോഡ് ചെയ്യുന്നു
+    const writer = fs.createWriteStream(fileName);
+    const response = await axios({
+      url: downloadUrl,
+      method: 'GET',
+      responseType: 'stream'
+    });
+
+    response.data.pipe(writer);
+
+    await new Promise((resolve, reject) => {
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    });
+
+    // തംബ്‌നെയിൽ ബഫർ ഉണ്ടാക്കുന്നു
+    const thumbRes = await axios.get(video.thumbnail, { responseType: 'arraybuffer' });
+    const thumbBuffer = Buffer.from(thumbRes.data);
+
+    // ✅ 1. ഓഡിയോ ഫയൽ അയക്കുന്നു (ExternalAdReply സഹിതം)
+    await sock.sendMessage(chat, {
+      audio: fs.readFileSync(fileName),
+      mimetype: "audio/mpeg",
+      fileName: `${video.title}.mp3`,
+      contextInfo: {
+        externalAdReply: {
+          title: video.title,
+          body: 'Asura MD 👺',
+          thumbnail: thumbBuffer,
+          thumbnailUrl: video.thumbnail,
+          mediaType: 1,
+          sourceUrl: video.url,
+          renderLargerThumbnail: true,
         }
-
-        const thumbRes = await axios.get(video.thumbnail, { responseType: 'arraybuffer' });
-        const thumbBuffer = Buffer.from(thumbRes.data);
-
-        await execPromise(`${ffmpegPath} -i "${fileName}" -c:a libopus -ar 16000 -ac 1 "${voiceFileName}"`);
-
-        await sock.sendMessage(chat, {
-          audio: fs.readFileSync(fileName),
-          mimetype: "audio/mpeg",
-          fileName: `${video.title}.mp3`,
-          contextInfo: {
-            externalAdReply: {
-              title: video.title,
-              body: 'Asura MD 👺',
-              thumbnail: thumbBuffer,
-              thumbnailUrl: video.thumbnail,
-              mediaType: 1,
-              sourceUrl: video.url,
-              renderLargerThumbnail: true,
-            }
-          }
-        }, { quoted: msg });
-
-        if (fs.existsSync(voiceFileName)) {
-          await sock.sendMessage(chat, {
-            audio: fs.readFileSync(voiceFileName),
-            mimetype: "audio/ogg; codecs=opus",
-            ptt: true,
-            contextInfo: {
-              externalAdReply: {
-                title: video.title,
-                body: 'Asura MD 👺',
-                thumbnail: thumbBuffer,
-                thumbnailUrl: video.thumbnail,
-                mediaType: 1,
-                sourceUrl: video.url,
-                renderLargerThumbnail: true,
-              }
-            }
-          }, { quoted: msg });
-          fs.unlinkSync(voiceFileName);
-        }
-
-        fs.unlinkSync(fileName);
-      } else {
-         throw new Error("Not Found");
       }
-    } catch (execError) {
-      console.error("Execution Error:", execError);
-      return sock.sendMessage(chat, { text: `❌ Processing Error: ${execError.message}\n\n*Tip:* error ` });
+    }, { quoted: msg });
+
+    // ✅ 2. വോയിസ് നോട്ട് ഉണ്ടാക്കി അയക്കുന്നു
+    await execPromise(`${ffmpegPath} -i "${fileName}" -c:a libopus -ar 16000 -ac 1 "${voiceFileName}"`);
+    
+    if (fs.existsSync(voiceFileName)) {
+      await sock.sendMessage(chat, {
+        audio: fs.readFileSync(voiceFileName),
+        mimetype: "audio/ogg; codecs=opus",
+        ptt: true,
+        contextInfo: {
+          externalAdReply: {
+            title: video.title,
+            body: 'Asura MD 👺',
+            thumbnail: thumbBuffer,
+            thumbnailUrl: video.thumbnail,
+            mediaType: 1,
+            sourceUrl: video.url,
+            renderLargerThumbnail: true,
+          }
+        }
+      }, { quoted: msg });
+      
+      fs.unlinkSync(voiceFileName);
     }
+
+    fs.unlinkSync(fileName);
+
   } catch (e) {
-    console.error("Main Error:", e);
-    await sock.sendMessage(chat, { text: "❌ Something went wrong!" });
+    console.error(e);
+    await sock.sendMessage(chat, { text: "❌ Error: " + e.message });
   }
 };
