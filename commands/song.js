@@ -14,14 +14,14 @@ export default async (sock, msg, args) => {
     const video = search.videos[0];
     if (!video) return sock.sendMessage(chat, { text: "❌ Song Not Found!" });
 
-    // നിങ്ങളുടെ അതേ ഡിസൈൻ ക്യാപ്ഷൻ
+    // നിങ്ങളുടെ ഡിസൈൻ ക്യാപ്ഷൻ
     const infoText = `*👺⃝⃘̉̉━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
 *⊹* 🪔 *Song Download*
 *✧* 「 \`👺Asura MD\` 」
-*╰───────────────❂*
+*╰───────────❂*
 ╭•°•❲ *Downloading...* ❳•°•
  ⊙🎬 *TITLE:* ${video.title}
  ⊙📺 *CHANNEL:* ${video.author.name}
@@ -36,49 +36,48 @@ export default async (sock, msg, args) => {
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇ BY 👺Asura MD*`;
 
-    // 1. ഫോട്ടോയും ഡിസൈനും അയക്കുന്നു
+    // 1. തംബ്‌നെയിൽ അയക്കുന്നു
     await sock.sendMessage(chat, {
       image: { url: video.thumbnail },
       caption: infoText
     });
 
-    // തംബ്‌നെയിൽ ബഫർ
     const thumbRes = await axios.get(video.thumbnail, { responseType: 'arraybuffer' });
     const thumbBuffer = Buffer.from(thumbRes.data);
 
     let audioUrl = null;
 
-    // --- API 1:  (Powerful & High Speed) ---
+    // --- API 1: Izumi API ---
     try {
-        const res1 = await axios.get(`https://izumiiiiiiii.dpdns.org/downloader/youtube-play?query=${encodeURIComponent(query)}`);
-        audioUrl = res1.data.data.dl; 
+        const res1 = await axios.get(`https://izumiiiiiiii.dpdns.org/downloader/youtube?url=${encodeURIComponent(video.url)}&format=mp3`);
+        audioUrl = res1.data.result.download;
     } catch (e) {
         console.log("API 1 Failed");
     }
 
-    // --- API 2:  (Fallback 1) ---
+    // --- API 2: Keith API ---
     if (!audioUrl) {
         try {
-            const res2 = await axios.get(`https://apis-keith.vercel.app/download/dlmp3?url=${urlYt}`);
+            const res2 = await axios.get(`https://apis-keith.vercel.app/download/dlmp3?url=${encodeURIComponent(video.url)}`);
             audioUrl = res2.data.result.downloadUrl;
         } catch (e) {
             console.log("API 2 Failed");
         }
     }
 
-    // --- API 3: (Fallback 2) ---
+    // --- API 3: Okatsu API ---
     if (!audioUrl) {
         try {
-            const res3 = await axios.get(`https://okatsu-rolezapiiz.vercel.app/downloader/ytmp3?url=${encodeURIComponent(youtubeUrl)}`);
-            audioUrl = res3.data.url;
+            const res3 = await axios.get(`https://okatsu-rolezapiiz.vercel.app/downloader/ytmp3?url=${encodeURIComponent(video.url)}`);
+            audioUrl = res3.data.dl || res3.data.result?.mp3;
         } catch (e) {
             console.log("API 3 Failed");
         }
     }
 
-    if (!audioUrl) throw new Error("All APIs failed to provide a link.");
+    if (!audioUrl) throw new Error("All APIs failed");
 
-    // ✅ ഓഡിയോ അയക്കുന്നു (സെർവറിൽ ഡൗൺലോഡ് ചെയ്യാതെ)
+    // ✅ ഓഡിയോ അയക്കുന്നു
     await sock.sendMessage(chat, {
       audio: { url: audioUrl },
       mimetype: "audio/mpeg",
