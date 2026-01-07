@@ -97,7 +97,7 @@ export default async (sock, msg, args) => {
     // ✅ വോയിസ് നോട്ട് അയക്കുന്നു
     await sock.sendMessage(chat, {
       audio: { url: audioUrl },
-      mimetype: "audio/mp4; codecs=opus",
+      mimetype: "audio/mp4",
       ptt: true,
       contextInfo: {
         externalAdReply: {
