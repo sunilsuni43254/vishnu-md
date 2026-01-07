@@ -47,7 +47,7 @@ export default async (sock, msg, args) => {
     const thumbBuffer = Buffer.from(thumbRes.data);
 
     // --- ബ്ലോക്ക് ഇല്ലാത്ത പുതിയ ഡൗൺലോഡ് രീതി (Cobalt API) ---
-    const cobaltRes = await axios.post('https://api.cobalt.tools/api/json', {
+    const cobaltRes = await axios.post('https://api.siputzx.my.id/api/dwnld/ytmp3?url=${video.url}', {
         url: video.url,
         downloadMode: 'audio',
         audioFormat: 'mp3',
