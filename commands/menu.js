@@ -2,6 +2,9 @@ import fs from 'fs';
 
 export default async (sock, msg, args) => {
 const chat = msg.key.remoteJid;
+        try {
+        // 1. റിയാക്ഷൻ നൽകുന്നു
+        await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
 const imagePath = './media/thumb.jpg'; 
 const songPath = './media/song.opus'; 
 
@@ -64,8 +67,6 @@ const songPath = './media/song.opus';
         } else {
             console.log("Menu audio file not found!");
         }
-
-        await sock.sendMessage(from, { react: { text: "✅", key: msg.key } });
         
     } catch (error) {
         console.error("Error in menu command:", error);
