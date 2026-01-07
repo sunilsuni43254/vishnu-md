@@ -35,7 +35,7 @@ export default async (sock, msg, args) => {
     await sock.sendMessage(chat, { image: { url: video.thumbnail }, caption: captionText }, { quoted: msg });
 
     // --- ഡൗൺലോഡ് ചെയ്യാൻ API ഉപയോഗിക്കുന്നു ---
-    const res = await axios.get(`https://api.zenkey.my.id/api/download/ytmp4?url=${video.url}&apikey=zenkey`);
+    const res = await axios.get(`https://api.y2mate.tools/v1/download?url=YOUR_URL`);
     const downloadUrl = res.data.result.downloadUrl;
 
     if (downloadUrl) {
