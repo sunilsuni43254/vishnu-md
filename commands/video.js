@@ -1,21 +1,48 @@
 import yts from "yt-search";
 import axios from "axios";
 
+// API കൺഫിഗറേഷൻ
+const AXIOS_DEFAULTS = {
+    timeout: 60000,
+    headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*'
+    }
+};
+
+// ആവർത്തിച്ച് ശ്രമിക്കാനുള്ള ഫങ്ക്ഷൻ
+async function tryRequest(getter, attempts = 2) {
+    let lastError;
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+        try {
+            return await getter();
+        } catch (err) {
+            lastError = err;
+            if (attempt < attempts) await new Promise(r => setTimeout(r, 1000));
+        }
+    }
+    throw lastError;
+}
+
 export default async (sock, msg, args) => {
-  const chat = msg.key.remoteJid;
-  const searchText = args.join(" ");
+    const chat = msg.key.remoteJid;
+    const searchText = args.join(" ");
 
-  if (!searchText) {
-    return sock.sendMessage(chat, { text: "Usage: .video <name or link>" });
-  }
+    if (!searchText) {
+        return sock.sendMessage(chat, { text: "Usage: .video <name or link>" });
+    }
 
-  try {
-    const search = await yts(searchText);
-    const video = search.videos[0];
+    try {
+        // 1. വീഡിയോ സെർച്ച് ചെയ്യുന്നു
+        const search = await yts(searchText);
+        const video = search.videos[0];
 
-    if (!video) return sock.sendMessage(chat, { text: "Video Not Found 😢" });
+        if (!video) {
+            return sock.sendMessage(chat, { text: "Video Not Found 😢" });
+        }
 
-    const captionText = `*👺⃝⃘̉̉━━━━━━━━━━━◆◆◆*
+        // നിങ്ങളുടെ അതേ ഡിസൈൻ ക്യാപ്ഷൻ
+        const captionText = `*👺⃝⃘̉̉━━━━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
@@ -32,25 +59,46 @@ export default async (sock, msg, args) => {
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
-    await sock.sendMessage(chat, { image: { url: video.thumbnail }, caption: captionText }, { quoted: msg });
+        // ഫോട്ടോയും ഡിസൈനും അയക്കുന്നു
+        await sock.sendMessage(chat, { 
+            image: { url: video.thumbnail }, 
+            caption: captionText 
+        }, { quoted: msg });
 
-    // --- ഡൗൺലോഡ് ചെയ്യാൻ API ഉപയോഗിക്കുന്നു ---
-    const res = await axios.get(`https://api.y2mate.tools/v1/download?url=YOUR_URL`);
-    const downloadUrl = res.data.result.downloadUrl;
+        // 2. വീഡിയോ ഡാറ്റ എടുക്കുന്നു (Izumi -> Okatsu -> Cobalt എന്ന ക്രമത്തിൽ)
+        let downloadUrl = null;
 
-    if (downloadUrl) {
-      await sock.sendMessage(chat, {
-        video: { url: downloadUrl },
-        mimetype: 'video/mp4',
-        fileName: `${video.title}.mp4`,
-        caption: `*${video.title}*`
-      }, { quoted: msg });
-    } else {
-      throw new Error("Download URL not found");
+        try {
+            // ഒന്നാമത്തെ വഴി: Izumi
+            const res = await tryRequest(() => axios.get(`https://izumiiiiiiii.dpdns.org/downloader/youtube?url=${encodeURIComponent(video.url)}&format=360`, AXIOS_DEFAULTS));
+            downloadUrl = res.data.result.download;
+        } catch (e1) {
+            try {
+                // രണ്ടാമത്തെ വഴി: Okatsu
+                const res = await tryRequest(() => axios.get(`https://okatsu-rolezapiiz.vercel.app/downloader/ytmp4?url=${encodeURIComponent(video.url)}`, AXIOS_DEFAULTS));
+                downloadUrl = res.data.result.mp4;
+            } catch (e2) {
+                // മൂന്നാമത്തെ വഴി: Cobalt (ഏറ്റവും പവർഫുൾ)
+                const res = await axios.post('https://api.cobalt.tools/api/json', {
+                    url: video.url,
+                    videoQuality: '360'
+                }, AXIOS_DEFAULTS);
+                downloadUrl = res.data.url;
+            }
+        }
+
+        if (!downloadUrl) throw new Error("All APIs failed");
+
+        // 3. വീഡിയോ അയക്കുന്നു
+        await sock.sendMessage(chat, {
+            video: { url: downloadUrl },
+            mimetype: 'video/mp4',
+            fileName: `${video.title}.mp4`,
+            caption: `*${video.title}*`
+        }, { quoted: msg });
+
+    } catch (err) {
+        console.error("Main Error:", err);
+        await sock.sendMessage(chat, { text: "⏳loading" });
     }
-
-  } catch (err) {
-    console.error(err);
-    await sock.sendMessage(chat, { text: "API Error! വേറെ ലിങ്ക് പരീക്ഷിക്കൂ." });
-  }
 };
