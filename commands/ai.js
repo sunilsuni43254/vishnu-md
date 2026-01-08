@@ -9,7 +9,6 @@ export default async (sock, msg, args) => {
         return sock.sendMessage(from, { text: "❌ Please provide a description!" });
     }
 
-    // media folder ഉണ്ടെന്ന് ഉറപ്പാക്കുന്നു
     if (!fs.existsSync('./media')) {
         fs.mkdirSync('./media');
     }
@@ -18,19 +17,14 @@ export default async (sock, msg, args) => {
         await sock.sendMessage(from, { react: { text: "🎨", key: msg.key } });
 
         const { key } = await sock.sendMessage(from, { text: "🚀 Asura AI is imagining..." });
-        
-        //  (ആനിമേഷൻ കാണാൻ)
         await new Promise(resolve => setTimeout(resolve, 1500));
         await sock.sendMessage(from, { text: "👺 Asura MD AI Artwork Ready!", edit: key });
 
         const aiUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${Math.floor(Math.random() * 100000)}`;
         
-        // 🛠️ arraybuffer ഉപയോഗിച്ച് ഡൗൺലോഡ് ചെയ്യുന്നു (കൂടുതൽ സുരക്ഷിതം)
+        // ഇമേജ് ഡൗൺലോഡ് ചെയ്യുന്നു
         const response = await axios.get(aiUrl, { responseType: 'arraybuffer' });
-        const tempPath = `./media/ai_${Date.now()}.jpg`;
-        
-        // ഫയൽ സേവ് ചെയ്യുന്നു
-        fs.writeFileSync(tempPath, Buffer.from(response.data));
+        const imageBuffer = Buffer.from(response.data);
 
         const aiMsg = `*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
@@ -52,21 +46,18 @@ export default async (sock, msg, args) => {
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
-        // ഇമേജ് അയക്കുന്നു
+        // 🚀 ഇമേജ് അയക്കുന്നു (Mimetype ചേർത്തു)
         await sock.sendMessage(from, { 
-            image: fs.readFileSync(tempPath), 
-            caption: aiMsg 
-        }, { quoted: msg });
+            image: imageBuffer, 
+            caption: aiMsg,
+            mimetype: 'image/jpeg' 
 
-        // ഫയൽ ഡിലീറ്റ് ചെയ്യുന്നു (Storage സംരക്ഷിക്കാൻ)
-        if (fs.existsSync(tempPath)) {
-            fs.unlinkSync(tempPath);
-        }
+        }, { quoted: msg });
 
         await sock.sendMessage(from, { react: { text: "✅", key: msg.key } });
 
     } catch (e) {
         console.error("AI Error:", e);
-        await sock.sendMessage(from, { text: "❌ AI server down or error generating image." });
+        await sock.sendMessage(from, { text: "❌ Error! AI ." });
     }
 };
