@@ -31,7 +31,9 @@ export default async (sock, msg, args) => {
 
         // 3. AI ഇമേജ് API (Pollinations AI - No API Key Needed)
         const aiUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${Math.floor(Math.random() * 100000)}`;
-
+        const response = await axios.get(aiUrl, { responseType: 'arraybuffer' });
+        const buffer = Buffer.from(response.data, 'utf-8');
+        
         // ഡിസൈൻ ക്യാപ്ഷൻ
         const aiMsg = `*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
@@ -47,6 +49,9 @@ export default async (sock, msg, args) => {
 ╎ ⊙ 𝙴𝚗𝚐𝚒𝚗𝚎 : Stable Diffusion
 ╎ ⊙ 𝚀𝚞𝚊𝚕𝚒𝚝𝚢: Ultra HD
 ╰╌╌╌╌╌╌╌╌╌╌╌╌࿐
+╠━━━━━━━━━━━━━❥❥❥
+┃ *owner* arun.Cumar 
+╚━━━━━⛥❖⛥━━━━━❥❥❥
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
