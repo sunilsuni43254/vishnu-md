@@ -32,7 +32,7 @@ export default async (sock, msg, args) => {
         // 3. AI ഇമേജ് API (Pollinations AI - No API Key Needed)
         const aiUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${Math.floor(Math.random() * 100000)}`;
         const response = await axios.get(aiUrl, { responseType: 'arraybuffer' });
-        const buffer = Buffer.from(response.data, 'utf-8');
+        const buffer = Buffer.from(response.data);
         
         // ഡിസൈൻ ക്യാപ്ഷൻ
         const aiMsg = `*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
@@ -57,8 +57,9 @@ export default async (sock, msg, args) => {
 
         // 4. ഇമേജ് അയക്കുന്നു (Thumbnail ഫയൽ സപ്പോർട്ടോടു കൂടി)
         await sock.sendMessage(from, { 
-            image: { url: aiUrl }, 
+            image: buffer, 
             caption: aiMsg,
+            mimetype: 'image/jpeg',
             jpegThumbnail: fs.existsSync(imagePath) ? fs.readFileSync(imagePath) : null
         }, { quoted: msg });
 
