@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-// total start time 
+// Start time
 const botStartTime = Date.now();
 
 export default async (sock, msg, args) => {
@@ -16,8 +16,8 @@ export default async (sock, msg, args) => {
 
         const frames = [
             "📶 Analyzing Server...",
-            "📡 Calculating Ping...",
-            "⏳ Fetching Uptime...",
+            "📡 Calculating Ping.........",
+            "⏳ Fetching Uptime...................",
             "👺 Asura MD Engine Ready!"
         ];
 
@@ -26,9 +26,11 @@ export default async (sock, msg, args) => {
             await sock.sendMessage(chat, { text: frame, edit: key });
         }
 
-        // 3. UptimeString 
-        const ping = Date.now() - (msg.messageTimestamp * 1000);
+        // 3. Ping Calculation (മൈനസ് വാല്യൂ വരാതിരിക്കാൻ Math.abs ഉപയോഗിച്ചു)
+        const timestamp = msg.messageTimestamp * 1000;
+        const ping = Math.abs(Date.now() - timestamp);
         
+        // 4. Uptime Calculation
         const uptimeSeconds = Math.floor((Date.now() - botStartTime) / 1000);
         const days = Math.floor(uptimeSeconds / (24 * 3600));
         const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
@@ -54,7 +56,7 @@ export default async (sock, msg, args) => {
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
-        // 4. Image path
+        // 5. ഒറിജിനൽ മെസ്സേജ് അയക്കുന്നു
         if (fs.existsSync(imagePath)) {
             await sock.sendMessage(chat, { 
                 image: fs.readFileSync(imagePath), 
@@ -64,12 +66,15 @@ export default async (sock, msg, args) => {
             await sock.sendMessage(chat, { text: pingMsg }, { quoted: msg });
         }
 
-  
+        // 6. എപ്പോഴും വരുന്ന ഗ്രൂപ്പ്/ചാനൽ പരസ്യം
         const groupLink = "https://chat.whatsapp.com/LC3HXrnNI8J0481tjPTbtp";
+        const channelLink = "https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24";
+
         const adMsg = `🏮 *Join our Community:*
 Stay updated with Asura MD 
 
-${groupLink}
+👥 *Group:* ${groupLink}
+📢 *Channel:* ${channelLink}
 
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
@@ -77,10 +82,10 @@ ${groupLink}
             text: adMsg,
             contextInfo: {
                 externalAdReply: {
-                    title: "👺 ASURA MD OFFICIAL",
-                    body: "Click to join our community! ✨",
+                    title: "👺 ASURA MD COMMUNITY",
+                    body: "Click to join for updates! ✨",
                     mediaType: 1,
-                    sourceUrl: groupLink,
+                    sourceUrl: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24, 
                     showAdAttribution: true,
                     renderLargerThumbnail: false
                 }
