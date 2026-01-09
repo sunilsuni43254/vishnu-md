@@ -7,7 +7,7 @@ export default async (sock, msg, args) => {
 
     if (!phoneNumber) {
         return sock.sendMessage(chat, { 
-            text: "❌ *Please provide your phone number with country code!*\n\nExample: `.pair 917736811908`" 
+            text: "❌ *Please provide your phone number with country code!*\n\nExample: `.pair 91XXXXXXXXXX`" 
         });
     }
 
