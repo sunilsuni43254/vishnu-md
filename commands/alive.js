@@ -19,7 +19,7 @@ export default async (sock, msg, args) => {
 ┃ *⊙📳mode:-  public ✅*
 ╠━━━━━━━━━━━━━❥❥❥
 ┃ *⊙🫀health:-  💯%*
-╚━━━━━━━⛥❖⛥━━━━━━❥❥❥
+╚━━━━━⛥❖⛥━━━━❥❥❥
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
@@ -31,7 +31,8 @@ export default async (sock, msg, args) => {
             }, { quoted: msg });
         } else {
             await sock.sendMessage(chat, { text: aliveMsg }, { quoted: msg });
-          
+        }
+      
           if (Math.random() < 0.2) { 
     const groupLink = "https://chat.whatsapp.com/LC3HXrnNI8J0481tjPTbtp";
     const adMsg = `🏮 *Join our Community:*
@@ -55,7 +56,7 @@ ${groupLink}
         }
     });
 }
-        }
+        
     } catch (e) {
         console.error("Alive Error:", e);
     }
