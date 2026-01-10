@@ -90,42 +90,7 @@ export default async (sock, msg, args) => {
             const { imageMessage } = await sock.prepareMessageMedia({ image: fs.readFileSync(imagePath) }, { upload: sock.waUploadToServer });
             mediaMsg = imageMessage;
         }
-
-        // 4. Send Interactive Message (Buttons)
-        const interactiveMessage = {
-            viewOnceMessage: {
-                message: {
-                    interactiveMessage: {
-                        header: {
-                            title: "Asura MD 👺",
-                            hasMediaAttachment: true,
-                            imageMessage: mediaMsg
-                        },
-                        body: { text: menuText },
-                        footer: { text: "Powered by Asura MD" },
-                        nativeFlowMessage: {
-                            buttons: [
-                                {
-                                    name: "quick_reply",
-                                    buttonParamsJson: JSON.stringify({ display_text: "🩸 Alive", id: ".alive" })
-                                },
-                                {
-                                    name: "quick_reply",
-                                    buttonParamsJson: JSON.stringify({ display_text: "📡 Ping", id: ".ping" })
-                                },
-                                {
-                                    name: "quick_reply",
-                                    buttonParamsJson: JSON.stringify({ display_text: "👑 Owner", id: ".owner" })
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        };
-
-        await sock.relayMessage(chat, interactiveMessage, { messageId: msg.key.id });
-
+        
         // 5. Send Reaction Finish
         await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
 
