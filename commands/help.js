@@ -1,29 +1,31 @@
 import fs from 'fs';
-import path from 'path';
 
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
 
     try {
-        // 1. Reaction
-        await sock.sendMessage(chat, { react: { text: "⚡", key: msg.key } });
+        // 1. റിയാക്ഷൻ നൽകുന്നു
+        await sock.sendMessage(chat, { react: { text: "⏳", key: msg.key } });
 
-        // 2. New Stylish Loading Animation
-        const { key } = await sock.sendMessage(chat, { text: "『 👺 Asura MD Engine 』\n\n[▒▒▒▒▒▒▒▒▒▒] 0%" });
+        // 2. ആനിമേഷൻ (Safe Interval 1.2s)
+        const { key } = await sock.sendMessage(chat, { text: "👺 Asura MD Loading..." });
 
-        const loadingFrames = [
+        const frames = [
             "『 👺 Asura MD Engine 』\n\n[▓▒▒▒▒▒▒▒▒▒] 15%",
             "『 👺 Asura MD Engine 』\n\n[▓▓▓▒▒▒▒▒▒▒] 30%",
             "『 👺 Asura MD Engine 』\n\n[▓▓▓▓▓▒▒▒▒▒] 55%",
             "『 👺 Asura MD Engine 』\n\n[▓▓▓▓▓▓▓▒▒▒] 80%",
             "『 👺 Asura MD Engine 』\n\n[▓▓▓▓▓▓▓▓▓▓] 100%",
-            "🚀 *System Optimized! Sending Menu...*"
+            "🚀 Asura MD Engine Ready!",
+            "> 👺 ASURA MD"
         ];
 
-        for (let frame of loadingFrames) {
-            await new Promise(resolve => setTimeout(resolve, 400));
+        for (let frame of frames) {
+            await new Promise(resolve => setTimeout(resolve, 1200)); 
             await sock.sendMessage(chat, { text: frame, edit: key });
         }
+
+        await sock.sendMessage(chat, { react: { text: "✔", key: msg.key } });
 
         const imagePath = './media/thumb.jpg'; 
         const songPath = './media/song.opus'; 
@@ -32,78 +34,64 @@ export default async (sock, msg, args) => {
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
-*⊹* 
 *⊹* 🪔 *ᴡʜᴀᴛꜱᴀᴘᴘ ᴍɪɴɪ ʙᴏᴛ*
 *✧* 「 👺Asura MD 」
-*╰───────────❂*
+*╰────────────❂*
+╔━━━━━━━━━━❥❥❥
+┃ °☆°☆°☆°☆°☆°☆°☆°☆°
+╠━━━━⛥❖⛥━━━❥❥❥
+┃ ⊙⚡ 👉 .Ping
+┃ ⊙🔋 👉 .Alive
+┃ ⊙📜 👉 .Menu
+┃ ⊙🎵 👉 .Song <name>
+┃ ⊙🎬 👉 .Video <name>
+┃ ⊙🖼️ 👉 .Sticker
+┃ ⊙🎮 👉 .Game
+┃ ⊙🎭 👉 .Fun
+┃ ⊙🤖 👉 .Ai <text>
+┃ ⊙🆎️ 👉 .Font <text>
+┃ ⊙👤 👉 .Owner
+┃ ⊙📓 👉 .Help
+┃ ⊙🎧 👉 .Play <name>
+┃ ⊙📢 👉 .Tagall
+┃ ⊙📷 👉 .Image <name>
+╚━━━⛥❖⛥━━━❥❥❥
+┃ °☆°☆°☆°☆°☆°☆°☆°☆°
+╠━━━━━━━━━━❥❥❥
+┃ *owner* arun.Cumar 
+╚━━━━⛥❖⛥━━━❥❥❥
+> *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*
+> 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24`;
 
-╔━━━━━━━━━━━❥❥❥
-┃ ⊙⚡ .Ping
-┃ ⊙🔋 .Alive
-┃ ⊙📜 .Menu
-┃ ⊙🎵 .Song <name>
-┃ ⊙🎬 .Video <name>
-┃ ⊙🖼️ .Sticker
-┃ ⊙🎮 .Game
-┃ ⊙🎭 .Fun
-┃ ⊙🤖 .Ai <text>
-┃ ⊙👤 .Owner
-┃ ⊙🎧 .Play <name>
-┃ ⊙📢 .Tagall
-╚━━━━⛥❖⛥━━━━❥❥❥
-> *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
-
-        // 3. Image Preparation
-        let mediaContent = {};
+        // 3. Send Image with Menu Text
         if (fs.existsSync(imagePath)) {
-            const { imageMessage } = await sock.prepareMessageMedia({ image: fs.readFileSync(imagePath) }, { upload: sock.waUploadToServer });
-            mediaContent = imageMessage;
+            await sock.sendMessage(chat, {
+                image: fs.readFileSync(imagePath),
+                caption: menuText
+            }, { quoted: msg });
+        } else {
+            await sock.sendMessage(chat, { text: menuText }, { quoted: msg });
         }
 
-        // 4. Interactive Message Structure
-        const message = {
-            interactiveMessage: {
-                header: {
-                    title: "Asura MD 👺",
-                    hasMediaAttachment: fs.existsSync(imagePath),
-                    imageMessage: mediaContent
-                },
-                body: { text: menuText },
-                footer: { text: "Powered by Asura MD" },
-                nativeFlowMessage: {
-                    buttons: [
-                        {
-                            name: "quick_reply",
-                            buttonParamsJson: JSON.stringify({ display_text: "🩸 ALIVE", id: ".alive" })
-                        },
-                        {
-                            name: "quick_reply",
-                            buttonParamsJson: JSON.stringify({ display_text: "📡 PING", id: ".ping" })
-                        },
-                        {
-                            name: "quick_reply",
-                            buttonParamsJson: JSON.stringify({ display_text: "👑 OWNER", id: ".owner" })
-                        }
-                    ]
-                }
-            }
-        };
-
-        // 5. Relay Message (Buttons വരാൻ ഇത് അത്യാവശ്യമാണ്)
-        await sock.relayMessage(chat, { viewOnceMessage: { message } }, { messageId: msg.key.id });
-
-        // 6. Audio Theme
+        // 4. Send Opus Audio (As Voice Note with Context Info)
         if (fs.existsSync(songPath)) {
             await sock.sendMessage(chat, {
-                audio: fs.readFileSync(songPath),
+                audio: { url: songPath },
                 mimetype: "audio/ogg; codecs=opus",
-                ptt: true
+                ptt: true,
+                contextInfo: {
+                    externalAdReply: {
+                        title: 'Asura MD 👺',
+                        body: 'Playing Menu Theme...',
+                        thumbnail: fs.existsSync(imagePath) ? fs.readFileSync(imagePath) : null,
+                        mediaType: 1,
+                        sourceUrl: 'https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24'
+                    }
+                }
             }, { quoted: msg });
         }
 
     } catch (error) {
-        console.error("Error in menu command:", error);
-        // എറർ വന്നാൽ ഒരു നോർമൽ മെസേജ് എങ്കിലും അയക്കാൻ
-        await sock.sendMessage(chat, { text: "Error loading menu. Please check logs." });
+        console.error("Error in Help command:", error);
     }
 };
