@@ -69,14 +69,28 @@ export default async (sock, msg, args) => {
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24`;
 
         // 3. Send Image with help Text
-        if (fs.existsSync(imagePath)) {
-            await sock.sendMessage(chat, {
-                image: { url: imagePath },
-                caption: helpText
-            }, { quoted: msg });
-        } else {
-            await sock.sendMessage(chat, { text: helpText }, { quoted: msg });
+if (fs.existsSync(imagePath)) {
+    await sock.sendMessage(chat, {
+        document: { url: './media/thumb.jpg' },
+        mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        fileName: '👺 ASURA MD', 
+        fileLength: 9999999999999,
+        pageCount: 666,
+        caption: menuText,
+        contextInfo: {
+            externalAdReply: {
+                title: 'Asura MD 👺',
+                body: 'A Multi-Device WhatsApp Bot',
+                thumbnail: fs.readFileSync(imagePath),
+                sourceUrl: 'https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24',
+                mediaType: 1,
+                renderLargerThumbnail: true 
+            }
         }
+    }, { quoted: msg });
+} else {
+    await sock.sendMessage(chat, { text: menuText }, { quoted: msg });
+}
 
         // 4. Send Opus Audio 
         if (fs.existsSync(songPath)) {
