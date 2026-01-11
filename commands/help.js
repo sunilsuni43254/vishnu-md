@@ -76,7 +76,7 @@ if (fs.existsSync(imagePath)) {
         fileName: '👺 ASURA MD', 
         fileLength: 9999999999999,
         pageCount: 666,
-        caption: menuText,
+        caption: helpText,
         contextInfo: {
             externalAdReply: {
                 title: 'Asura MD 👺',
@@ -89,7 +89,7 @@ if (fs.existsSync(imagePath)) {
         }
     }, { quoted: msg });
 } else {
-    await sock.sendMessage(chat, { text: menuText }, { quoted: msg });
+    await sock.sendMessage(chat, { text: helpText }, { quoted: msg });
 }
 
         // 4. Send Opus Audio 
