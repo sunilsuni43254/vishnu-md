@@ -11,10 +11,10 @@ export default async (sock, msg, args) => {
         const { key } = await sock.sendMessage(chat, { text: "👺 Asura MD Loading..." });
 
         const frames = [
-            "▰▱▱▱▱▱▱▱▱▱ 10%",
-            "▰▰▰▰▱▱▱▱▱▱ 40%",
-            "▰▰▰▰▰▰▰▱▱▱ 70%",
-            "▰▰▰▰▰▰▰▰▰▰ 100%",
+            "💣 ▰▱▱▱▱▱▱▱▱▱ 🔹️10%",
+            "💣 ▰▰▰▰▱▱▱▱▱▱ 🔹️40%",
+            "💣 ▰▰▰▰▰▰▰▱▱▱ 🔹️70%",
+            "💣 ▰▰▰▰▰▰▰▰▰▰ 🔹️100%",
             "🚀 Asura MD Engine Ready!",
             "✅ Sending Menu Now!"
         ];
@@ -36,27 +36,33 @@ export default async (sock, msg, args) => {
 *⊹* 🪔 *ᴡʜᴀᴛꜱᴀᴘᴘ ᴍɪɴɪ ʙᴏᴛ*
 *✧* 「 👺Asura MD 」
 *╰─────────────────❂*
-╔━━━━━━━━━━━━━❥❥❥
-┃ *⊙  .Ping*
-┃ *⊙  .Alive*
-┃ *⊙  .Menu*
-┃ *⊙  .Song   <name>*
-┃ *⊙  .Video  <name>*
-┃ *⊙  .Sticker*
-┃ *⊙  .Game*
-┃ *⊙  .Fun*
-┃ *⊙  .Ai <text>*
-┃ *⊙  .Font <text>*
-┃ *⊙  .Owner*
-┃ *⊙  .Play <name>*
-┃ *⊙  .Tagall*
-┃ *⊙  .Image <name>* 
-┃ *⊙  .Help* 
-┃ °☆°☆°☆°☆°☆°☆°☆°☆°☆°☆°
-╠━━━━━━━━━━━━━❥❥❥
-┃ *owner* arun.Cumar 
-╚━━━━━━━⛥❖⛥━━━━━━❥❥❥
-> *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*
+╔━━━━━━━━━━❥❥❥
+┃ °☆°☆°☆°☆°☆°☆°☆°☆°
+╠━━━━⛥❖⛥━━━❥❥❥
+┃ ⊙⚡   .Ping  
+┃ ⊙🔋   .Alive
+┃ ⊙📜   .Menu
+┃ ⊙🎵   .Song <name>
+┃ ⊙🎬  .Video <name>
+┃ ⊙🖼️  .Sticker
+┃ ⊙🎮  .Game
+┃ ⊙🎭  .Fun
+┃ ⊙🤖  .Ai <text>
+┃ ⊙🆎️  .Font <text>
+┃ ⊙👤  .Owner
+┃ ⊙📓  .Help
+┃ ⊙🎧  .Play <name>
+┃ ⊙📢  .Tagall
+┃ ⊙📷  .Image <name>
+╚━━━⛥❖⛥━━━❥❥❥
+┃ °☆°☆°☆°☆°☆°☆°☆°☆°
+╚━━━━⛥❖⛥━━━❥❥❥
+> 💡 𝐻𝑜𝑤 𝑡𝑜 𝑈𝑠𝑒:
+> 𝑇𝑦𝑝𝑒 𝑎𝑛𝑦 𝑐𝑜𝑚𝑚𝑎𝑛𝑑 𝑠𝑡𝑎𝑟𝑡𝑖𝑛𝑔 𝑤𝑖𝑡ℎ 𝑎 𝐷𝑜𝑡 (.)
+> 𝐸𝑥𝑎𝑚𝑝𝑙𝑒: .𝑝𝑖𝑛𝑔 𝑜𝑟 .𝑎𝑙𝑖𝑣𝑒
+
+© 👺 𝐴𝑠𝑢𝑟𝑎 𝑀𝐷 ᴍɪɴɪ ʙᴏᴛ
+𝑠ɪᴍᴘʟᴇ ᴡᴀʙᴏᴛ ᴍᴀᴅᴇ ʙʏ 𝑎𝑟𝑢𝑛.𝑐𝑢𝑚𝑎𝑟 ヅ
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24`;
 
         // 3. Send Image with Menu Text
