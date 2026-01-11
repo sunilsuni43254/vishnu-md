@@ -68,8 +68,13 @@ export default async (sock, msg, args) => {
         // 3. Send Image with Menu Text
         if (fs.existsSync(imagePath)) {
             await sock.sendMessage(chat, {
-                image: fs.readFileSync(imagePath),
+            document: { url: './media/thumb.jpg' },
+            mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            fileName: 👺 ASURA MD', 
+            fileLength: 9999999999999,
+            pageCount: 666,
                 caption: menuText
+                renderLargerThumbnail: true
             }, { quoted: msg });
         } else {
             await sock.sendMessage(chat, { text: menuText }, { quoted: msg });
