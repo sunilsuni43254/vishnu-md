@@ -50,9 +50,9 @@ export default async (sock, msg, args) => {
 
     let audioUrl = null;
 
-    // --- API 1: Izumi API ---
+    // --- API 1: YtApi ---
     try {
-        const res1 = await axios.get(`https://izumiiiiiiii.dpdns.org/downloader/youtube?url=${encodeURIComponent(video.url)}&format=mp3`);
+        const res1 = await axios.get(`https://ytapi-0n47.onrender.com/download?format=mp3&url=${encodeURIComponent(videoUrl)}`);
         audioUrl = res1.data.result.download;
     } catch (e) {
         console.log("API 1 Failed");
