@@ -1,29 +1,6 @@
 import yts from "yt-search";
 import axios from "axios";
 
-// API കൺഫിഗറേഷൻ
-const AXIOS_DEFAULTS = {
-    timeout: 60000,
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*'
-    }
-};
-
-// ആവർത്തിച്ച് ശ്രമിക്കാനുള്ള ഫങ്ക്ഷൻ
-async function tryRequest(getter, attempts = 2) {
-    let lastError;
-    for (let attempt = 1; attempt <= attempts; attempt++) {
-        try {
-            return await getter();
-        } catch (err) {
-            lastError = err;
-            if (attempt < attempts) await new Promise(r => setTimeout(r, 1000));
-        }
-    }
-    throw lastError;
-}
-
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
     const searchText = args.join(" ");
@@ -41,7 +18,7 @@ export default async (sock, msg, args) => {
             return sock.sendMessage(chat, { text: "Video Not Found 😢" });
         }
 
-        // നിങ്ങളുടെ അതേ ഡിസൈൻ ക്യാപ്ഷൻ
+        
         const captionText = `*👺⃝⃘̉̉━━━━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
@@ -59,66 +36,63 @@ export default async (sock, msg, args) => {
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
+        // ഇൻഫോ മെസ്സേജ് അയക്കുന്നു
         await sock.sendMessage(chat, { 
             image: { url: video.thumbnail }, 
             caption: captionText 
         }, { quoted: msg });
 
-      
-    let downloadUrl = null;
+        let downloadUrl = null;
 
-    // --- API 1: Cobalt API (High Quality & Fast) ---
-    try {
-        const res1 = await axios.post('https://api.cobalt.tools/api/json', {
-            url: video.url,
-            downloadMode: 'video', 
-            videoQuality: '720'
-        }, {
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
-        });
-        downloadUrl = res1.data.url;
-    } catch (e) {
-        console.log("Cobalt Video API Failed");
-    }
-
-    // --- API 2: Siputzx API (Stable Alternative) ---
-    if (!downloadUrl) {
+        // --- API 1: Cobalt (Best for Streaming) ---
         try {
-            const res2 = await axios.get(`https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(video.url)}`);
-            downloadUrl = res2.data.data.dl;
-        } catch (e) {
-            console.log("Siputzx Video API Failed");
+            const cobalt = await axios.post('https://api.cobalt.tools/api/json', {
+                url: video.url,
+                downloadMode: 'video',
+                videoQuality: '720'
+            }, {
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+            });
+            if (cobalt.data && cobalt.data.url) downloadUrl = cobalt.data.url;
+        } catch (e) { console.log("Cobalt Failed"); }
+
+        // --- API 2: Siputzx ---
+        if (!downloadUrl) {
+            try {
+                const siput = await axios.get(`https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(video.url)}`);
+                if (siput.data && siput.data.data && siput.data.data.dl) downloadUrl = siput.data.data.dl;
+            } catch (e) { console.log("Siput Failed"); }
         }
-    }
 
-    // --- API 3: Decipher API (Backup) ---
-    if (!downloadUrl) {
-        try {
-            const res3 = await axios.get(`https://api.alyachan.dev/api/ytv?url=${encodeURIComponent(video.url)}&apikey=Gatabu-Bot`);
-            downloadUrl = res3.data.data.download.url;
-        } catch (e) {
-            console.log("Decipher Video API Failed");
+        // --- API 3: Simple-YT-DL (Backup) ---
+        if (!downloadUrl) {
+            try {
+                const res = await axios.get(`https://api.zenkey.my.id/api/download/ytmp4?url=${encodeURIComponent(video.url)}&apikey=zenkey`);
+                if (res.data && res.data.result && res.data.result.downloadUrl) downloadUrl = res.data.result.downloadUrl;
+            } catch (e) { console.log("Backup API Failed"); }
         }
-    }
 
-    // ഫൈനൽ ചെക്കിംഗ്
-    if (!downloadUrl) throw new Error("🚀");
+        if (!downloadUrl) throw new Error("No URL found");
 
-        // 3. വീഡിയോ അയക്കുന്നു
+        
         await sock.sendMessage(chat, {
             video: { url: downloadUrl },
             mimetype: 'video/mp4',
             fileName: `${video.title}.mp4`,
             caption: `*🎬 ${video.title}*\n\n*👺Asura MD*`,
             contextInfo: {
-                matchingText: video.title,
-                forwardingScore: 999,
-                isForwarded: true,
+                externalAdReply: {
+                    title: video.title,
+                    body: '👺 Asura MD Video Downloader',
+                    thumbnailUrl: video.thumbnail,
+                    mediaType: 2,
+                    sourceUrl: video.url
+                }
             }
         }, { quoted: msg });
 
     } catch (err) {
-        console.error("Video Download Error:", err);
-        await sock.sendMessage(chat, { text: "❌ All servers are busy or file too large. Please try again later!" });
+        console.error("Final Error:", err);
+        await sock.sendMessage(chat, { text: "❌ All servers are busy. Please try again later!" });
     }
 };
