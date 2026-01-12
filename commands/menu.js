@@ -43,17 +43,17 @@ export default async (sock, msg, args) => {
 ┃ ⊙🔋   .Alive
 ┃ ⊙📜   .Menu
 ┃ ⊙🎵   .Song <name>
-┃ ⊙🎬  .Video <name>
-┃ ⊙🖼️  .Sticker
-┃ ⊙🎮  .Game
-┃ ⊙🎭  .Fun
-┃ ⊙🤖  .Ai <text>
-┃ ⊙🆎️  .Font <text>
-┃ ⊙👤  .Owner
-┃ ⊙📓  .Help
-┃ ⊙🎧  .Play <name>
-┃ ⊙📢  .Tagall
-┃ ⊙📷  .Image <name>
+┃ ⊙🎬   .Video <name>
+┃ ⊙🖼️   .Sticker
+┃ ⊙🎲   .Game
+┃ ⊙🎭   .Fun
+┃ ⊙🤖   .Ai <text>
+┃ ⊙🆎️   .Font <text>
+┃ ⊙👤   .Owner
+┃ ⊙📓   .Help
+┃ ⊙🎰   .Play
+┃ ⊙📢   .Tagall
+┃ ⊙📷   .Image <name>
 ╚━━━⛥❖⛥━━━❥❥❥
 ┃ °☆°☆°☆°☆°☆°☆°☆°☆°
 ╚━━━━⛥❖⛥━━━❥❥❥
