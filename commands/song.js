@@ -1,22 +1,27 @@
-import yts from "yt-search";
-import axios from "axios";
+import { Client } from "soundcloud-scraper";
 import ffmpeg from "fluent-ffmpeg";
 import { PassThrough } from "stream";
+import axios from "axios";
+
+const scClient = new Client();
 
 export default async (sock, msg, args) => {
   const chat = msg.key.remoteJid;
   const searchQuery = args.join(" ");
 
   if (!searchQuery) {
-    return sock.sendMessage(chat, { text: "❌ Usage: *.song* [song name/link]" });
+    return sock.sendMessage(chat, { text: "❌ Usage: *.song* [song name]" });
   }
 
   try {
-    const search = await yts(searchQuery);
-    const video = search.videos[0];
-    if (!video) return sock.sendMessage(chat, { text: "❌ Song Not Found!" });
+    // 1. SoundCloud സെർച്ച്
+    const searchResults = await scClient.search(searchQuery, "track");
+    if (!searchResults.length) return sock.sendMessage(chat, { text: "❌ Song Not Found!" });
 
-    // നിങ്ങളുടെ ഡിസൈൻ ക്യാപ്ഷൻ
+    const track = searchResults[0];
+    const songInfo = await scClient.getSongInfo(track.url);
+
+    // നിങ്ങളുടെ പഴയ അതേ ഡിസൈൻ ക്യാപ്ഷൻ
     const infoText = `*👺⃝⃘̉̉━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
@@ -25,9 +30,9 @@ export default async (sock, msg, args) => {
 *✧* 「 \`👺Asura MD\` 」
 *╰───────────❂*
 ╭•°•❲ *Streaming...* ❳•°•
- ⊙🎬 *TITLE:* ${video.title}
- ⊙📺 *CHANNEL:* ${video.author.name}
- ⊙⏳ *DURATION:* ${video.timestamp}
+ ⊙🎬 *TITLE:* ${songInfo.title}
+ ⊙📺 *ARTIST:* ${songInfo.author.name}
+ ⊙⏳ *DURATION:* ${Math.floor(songInfo.duration / 60000)} mins
 *◀︎ •၊၊||၊||||။‌၊||••*
 ╰╌╌╌╌╌╌╌╌╌╌࿐
 ╔━━━━━━━━━━━❥❥❥
@@ -38,86 +43,52 @@ export default async (sock, msg, args) => {
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇ BY 👺Asura MD*`;
 
+    // തംബ്നെയിൽ അയക്കുന്നു
     await sock.sendMessage(chat, {
-      image: { url: video.thumbnail },
+      image: { url: songInfo.thumbnail },
       caption: infoText
-    }, { quoted: msg });
+    });
 
-    let finalStreamUrl = null;
-
-    // --- IP Rotation Logic (Multiple Address-less Instances) ---
-    const instances = [
-        'https://invidious.projectsegfau.lt',
-        'https://inv.tux.rs',
-        'https://invidious.nerdvpn.de',
-        'https://inv.riverside.rocks'
-    ];
-
-    const videoId = video.url.split('v=')[1] || video.url.split('/').pop();
-
-    for (let instance of instances) {
-        try {
-            const res = await axios.get(`${instance}/api/v1/videos/${videoId}?fields=adaptiveFormats`, { timeout: 10000 });
-            // ഓഡിയോ സ്ട്രീം കണ്ടെത്തുന്നു
-            const audioStream = res.data.adaptiveFormats.find(f => f.type.includes('audio/webm') || f.type.includes('audio/mp4'));
-            if (audioStream && audioStream.url) {
-                finalStreamUrl = audioStream.url;
-                break; // ലിങ്ക് കിട്ടിയാൽ ലൂപ്പ് നിർത്തുക
-            }
-        } catch (e) {
-            console.log(`IP Blocked on ${instance}, switching...`);
-            continue;
-        }
-    }
-
-    if (!finalStreamUrl) throw new Error("Could not fetch stream URL from any IP");
-
-    const thumbRes = await axios.get(video.thumbnail, { responseType: 'arraybuffer' });
+    // തംബ്നെയിൽ ബഫർ (External Ad Reply-ക്കായി)
+    const thumbRes = await axios.get(songInfo.thumbnail, { responseType: 'arraybuffer' });
     const thumbBuffer = Buffer.from(thumbRes.data);
 
-    // ✅ 1. ഓഡിയോ ഫയൽ (MP3)
+    // 2. നേരിട്ടുള്ള സ്ട്രീമിംഗ് ലിങ്ക്
+    const stream = await songInfo.downloadProgressive();
+
+    // ✅ ഓഡിയോ സ്ട്രീം അയക്കുന്നു
     await sock.sendMessage(chat, {
-      audio: { url: finalStreamUrl },
+      audio: { stream: stream },
       mimetype: "audio/mpeg",
-      fileName: `${video.title}.mp3`,
+      fileName: `${songInfo.title}.mp3`,
       contextInfo: {
         externalAdReply: {
-          title: video.title,
-          body: 'Asura MD 👺',
+          title: songInfo.title,
+          body: 'Asura MD 👺 | SoundCloud',
           thumbnail: thumbBuffer,
           mediaType: 1,
-          sourceUrl: video.url,
+          sourceUrl: songInfo.url,
           renderLargerThumbnail: true,
         }
       }
     }, { quoted: msg });
 
-    // ✅ 2. വോയിസ് നോട്ട് (PTT)
+    // ✅ വോയിസ് സ്ട്രീം അയക്കുന്നു
+    const voiceStreamSource = await songInfo.downloadProgressive();
     const voiceStream = new PassThrough();
-    ffmpeg(finalStreamUrl)
+    ffmpeg(voiceStreamSource)
       .toFormat('ogg')
       .audioCodec('libopus')
-      .on('error', (err) => console.log('FFmpeg Error:', err.message))
       .pipe(voiceStream);
 
     await sock.sendMessage(chat, {
       audio: { stream: voiceStream },
       mimetype: 'audio/ogg; codecs=opus',
-      ptt: true,
-      contextInfo: {
-        externalAdReply: {
-          title: video.title,
-          body: 'Asura MD 👺',
-          thumbnail: thumbBuffer,
-          mediaType: 1,
-          sourceUrl: video.url,
-          renderLargerThumbnail: true,
-        }
-      }
+      ptt: true
     }, { quoted: msg });
 
   } catch (err) {
     console.error(err);
-    await sock.sendMessage(chat, { text: "⏳Loading.." });
+    await sock.sendMessage(chat, { text: "❌ All servers are busy. Please try again later!" });
   }
 };
