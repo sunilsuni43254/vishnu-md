@@ -69,8 +69,8 @@ export default async (sock, msg, args) => {
         let downloadUrl = null;
 
         try {
-            // ഒന്നാമത്തെ വഴി: Izumi
-            const res = await tryRequest(() => axios.get(`https://izumiiiiiiii.dpdns.org/downloader/youtube?url=${encodeURIComponent(video.url)}&format=360`, AXIOS_DEFAULTS));
+            // ഒന്നാമത്തെ വഴി: YtApi
+            const res = await tryRequest(() => axios.get(`https://ytapi-0n47.onrender.com/download?format=mp4&url=${encodeURIComponent(videoUrl)}`, AXIOS_DEFAULTS));
             downloadUrl = res.data.result.download;
         } catch (e1) {
             try {
