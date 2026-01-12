@@ -65,8 +65,44 @@ export default async (sock, msg, args) => {
         }, { quoted: msg });
 
       
-        // format=mp4 Api
-        let downloadUrl = `https://ytapi-0n47.onrender.com/download?format=mp4&url=${encodeURIComponent(video.url)}`;
+    let downloadUrl = null;
+
+    // --- API 1: Cobalt API (High Quality & Fast) ---
+    try {
+        const res1 = await axios.post('https://api.cobalt.tools/api/json', {
+            url: video.url,
+            downloadMode: 'video', 
+            videoQuality: '720'
+        }, {
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+        });
+        downloadUrl = res1.data.url;
+    } catch (e) {
+        console.log("Cobalt Video API Failed");
+    }
+
+    // --- API 2: Siputzx API (Stable Alternative) ---
+    if (!downloadUrl) {
+        try {
+            const res2 = await axios.get(`https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(video.url)}`);
+            downloadUrl = res2.data.data.dl;
+        } catch (e) {
+            console.log("Siputzx Video API Failed");
+        }
+    }
+
+    // --- API 3: Decipher API (Backup) ---
+    if (!downloadUrl) {
+        try {
+            const res3 = await axios.get(`https://api.alyachan.dev/api/ytv?url=${encodeURIComponent(video.url)}&apikey=Gatabu-Bot`);
+            downloadUrl = res3.data.data.download.url;
+        } catch (e) {
+            console.log("Decipher Video API Failed");
+        }
+    }
+
+    // ഫൈനൽ ചെക്കിംഗ്
+    if (!downloadUrl) throw new Error("🚀");
 
         // 3. വീഡിയോ അയക്കുന്നു
         await sock.sendMessage(chat, {
