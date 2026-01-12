@@ -3,7 +3,6 @@ import axios from "axios";
 import ffmpeg from "fluent-ffmpeg";
 import { PassThrough } from "stream";
 
-
 export default async (sock, msg, args) => {
   const chat = msg.key.remoteJid;
   const searchQuery = args.join(" ");
@@ -17,7 +16,7 @@ export default async (sock, msg, args) => {
     const video = search.videos[0];
     if (!video) return sock.sendMessage(chat, { text: "❌ Song Not Found!" });
 
-    // നിങ്ങളുടെ ഡിസൈൻ ക്യാപ്ഷൻ
+    // Design Caption
     const infoText = `*👺⃝⃘̉̉━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
@@ -32,14 +31,13 @@ export default async (sock, msg, args) => {
 *◀︎ •၊၊||၊||||။‌၊||••*
 ╰╌╌╌╌╌╌╌╌╌╌࿐
 ╔━━━━━━━━━━━❥❥❥
-┃ 1️⃣ Audio 🔊
+┃ *Audio 🔊*
 ╔━━━━━━━━━━━
-┃ 2️⃣ Voice 🎤
+┃ *Voice 🎤*
 ╚━━━━⛥❖⛥━━━━❥❥❥
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇ BY 👺Asura MD*`;
 
-    // 1. തംബ്‌നെയിൽ അയക്കുന്നു
     await sock.sendMessage(chat, {
       image: { url: video.thumbnail },
       caption: infoText
@@ -48,63 +46,41 @@ export default async (sock, msg, args) => {
     const thumbRes = await axios.get(video.thumbnail, { responseType: 'arraybuffer' });
     const thumbBuffer = Buffer.from(thumbRes.data);
 
-let downloadUrl = null;
+    let finalAudioUrl = null;
 
-// --- API 1: Cobalt API (MP3 / Best Quality) ---
-try {
-    const res1 = await axios.post(
-        'https://api.cobalt.tools/api/json',
-        {
-            url: video.url,
-            downloadMode: 'audio',
-            audioFormat: 'mp3',
-            audioQuality: '320'
-        },
-        {
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-        }
-    );
-    downloadUrl = res1.data.url;
-} catch (e) {
-    console.log("Cobalt MP3 API Failed");
-}
-
-// --- API 2: Siputzx MP3 API (Stable) ---
-if (!downloadUrl) {
+    // --- API FALLBACK SYSTEM ---
+    
+    // 1. Cobalt API
     try {
-        const res2 = await axios.get(
-            `https://api.siputzx.my.id/api/d/ytmp3?url=${encodeURIComponent(video.url)}`
-        );
-        downloadUrl = res2.data.data.dl;
-    } catch (e) {
-        console.log("Siputzx MP3 API Failed");
+        const res = await axios.post('https://api.cobalt.tools/api/json', 
+        { url: video.url, downloadMode: 'audio', audioFormat: 'mp3' },
+        { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' } });
+        finalAudioUrl = res.data.url;
+    } catch (e) { console.log("Cobalt Failed"); }
+
+    // 2. Siputzx API
+    if (!finalAudioUrl) {
+        try {
+            const res = await axios.get(`https://api.siputzx.my.id/api/d/ytmp3?url=${encodeURIComponent(video.url)}`);
+            finalAudioUrl = res.data.data.dl;
+        } catch (e) { console.log("Siputzx Failed"); }
     }
-}
 
-// --- API 3: Decypher / AlyaChan MP3 API (Backup) ---
-if (!downloadUrl) {
-    try {
-        const res3 = await axios.get(
-            `https://api.alyachan.dev/api/ytmp3?url=${encodeURIComponent(video.url)}&apikey=Gatabu-Bot`
-        );
-        downloadUrl = res3.data.data.download.url;
-    } catch (e) {
-        console.log("Decypher MP3 API Failed");
+    // 3. Alyachan API
+    if (!finalAudioUrl) {
+        try {
+            const res = await axios.get(`https://api.alyachan.dev/api/ytmp3?url=${encodeURIComponent(video.url)}&apikey=Gatabu-Bot`);
+            finalAudioUrl = res.data.data.download.url;
+        } catch (e) { console.log("Alyachan Failed"); }
     }
-}
 
-// --- Final Check ---
-if (!downloadUrl) throw new Error("MP3 download failed");
+    if (!finalAudioUrl) throw new Error("All APIs failed");
 
-    // ✅ ഓഡിയോ അയക്കുന്നു
+    // ✅ ഓഡിയോ 
     await sock.sendMessage(chat, {
-      audio: { url: audioUrl },
+      audio: { url: finalAudioUrl },
       mimetype: "audio/mpeg",
       fileName: `${video.title}.mp3`,
-      timeout: 60000,
       contextInfo: {
         externalAdReply: {
           title: video.title,
@@ -117,17 +93,16 @@ if (!downloadUrl) throw new Error("MP3 download failed");
       }
     }, { quoted: msg });
 
-    // ✅ വോയിസ് നോട്ട് അയക്കുന്നു
-    const audioStream = new PassThrough();
-
-    ffmpeg(audioUrl)
+    // ✅ വോയിസ് 
+    const voiceStream = new PassThrough();
+    ffmpeg(finalAudioUrl)
       .toFormat('ogg')
       .audioCodec('libopus')
-      .on('error', (err) => console.log('FFmpeg Error:', err))
-      .pipe(audioStream);
+      .on('error', (err) => console.log('FFmpeg Error:', err.message))
+      .pipe(voiceStream);
 
     await sock.sendMessage(chat, {
-      audio: { stream: audioStream },
+      audio: { stream: voiceStream },
       mimetype: 'audio/ogg; codecs=opus',
       ptt: true,
       contextInfo: {
@@ -147,5 +122,3 @@ if (!downloadUrl) throw new Error("MP3 download failed");
     await sock.sendMessage(chat, { text: "❌ All servers are busy. Please try again later!" });
   }
 };
-
-
