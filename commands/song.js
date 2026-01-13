@@ -1,73 +1,77 @@
-import axios from "axios";
-import fs from "fs";
+import axios from 'axios';
+import yts from 'yt-search';
 
 export default async (sock, msg, args) => {
-  const chat = msg.key.remoteJid;
-  const searchQuery = args.join(" ");
-  const thumbPath = "./media/thumb.jpg"; // നിങ്ങളുടെ ലോക്കൽ ഇമേജ് പാത്ത്
+    const chatId = msg.key.remoteJid;
+    const searchQuery = args.join(" ");
 
-  if (!searchQuery) {
-    return sock.sendMessage(chat, { text: "❌ Usage: *.song* [song name]" });
-  }
-
-  try {
-    // 1. Spotify Search (ഇത് മിക്കവാറും എല്ലാ പാട്ടുകളും കണ്ടെത്തും)
-    const searchRes = await axios.get(`https://api.siputzx.my.id/api/s/spotify?query=${encodeURIComponent(searchQuery)}`);
-    
-    if (!searchRes.data || !searchRes.data.data.length) {
-      return sock.sendMessage(chat, { text: "❌ Song Not Found!" });
+    if (!searchQuery) {
+        return sock.sendMessage(chatId, { text: '❌ Which song do you want to play?' }, { quoted: msg });
     }
 
-    const track = searchRes.data.data[0];
-    const trackUrl = track.url;
+    try {
+        // 1. YouTube Search
+        const { videos } = await yts(searchQuery);
+        if (!videos || videos.length === 0) {
+            return sock.sendMessage(chatId, { text: '❌ Song not found!' }, { quoted: msg });
+        }
 
-    // 2. നേരിട്ടുള്ള ഡൗൺലോഡ് ലിങ്ക് എടുക്കുന്നു (No Proxy, No API Key)
-    const dlRes = await axios.get(`https://api.siputzx.my.id/api/d/spotify?url=${encodeURIComponent(trackUrl)}`);
-    const finalAudioUrl = dlRes.data.data.download;
+        const video = videos[0];
+        const videoUrl = video.url;
 
-    if (!finalAudioUrl) throw new Error("Stream link failed");
+        // 2. Fetch Direct Audio Stream URL (No Local Download)
+        // ytmp3 എൻഡ് പോയിന്റ് ഉപയോഗിച്ച് നേരിട്ട് ഓഡിയോ ലിങ്ക് എടുക്കുന്നു
+        const dlRes = await axios.get(`https://api.siputzx.my.id/api/d/ytmp3?url=${encodeURIComponent(videoUrl)}`);
+        
+        if (!dlRes.data || !dlRes.data.data || !dlRes.data.data.dl) {
+            throw new Error('Audio source not available');
+        }
 
-    // നിങ്ങളുടെ പഴയ അതേ ഡിസൈൻ ക്യാപ്ഷൻ
-    const infoText = `*👺⃝⃘̉̉━━━━━━━━◆◆◆*
+        const finalAudioUrl = dlRes.data.data.dl;
+
+        // 3. Asura MD Design for Music
+        const infoText = `*👺⃝⃘̉̉━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
-*⊹* 🪔 *Song Download*
+*⊹*    *🎵Song Download*
 *✧* 「 \`👺Asura MD\` 」
 *╰───────────❂*
 ╭•°•❲ *Streaming...* ❳•°•
- ⊙🎬 *TITLE:* ${track.title}
- ⊙📺 *ARTIST:* ${track.artist.name}
- ⊙⏳ *DURATION:* ${track.duration}
+ ⊙🎬 *TITLE:* ${video.title}
+ ⊙🎙️ *ARTIST:* ${video.author.name}
+ ⊙⏳ *DURATION:* ${video.timestamp}
 *◀︎ •၊၊||၊||||။‌၊||••*
 ╰╌╌╌╌╌╌╌╌╌╌࿐
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇ BY 👺Asura MD*`;
 
-    // ഇമേജ് അയക്കുന്നു
-    await sock.sendMessage(chat, {
-      image: fs.existsSync(thumbPath) ? fs.readFileSync(thumbPath) : { url: track.thumbnail },
-      caption: infoText
-    });
+        // 4. Send Thumbnail first (Optional, but looks better)
+        await sock.sendMessage(chatId, { 
+            image: { url: video.thumbnail }, 
+            caption: infoText 
+        }, { quoted: msg });
 
-    // ഓഡിയോ നേരിട്ട് സ്ട്രീം ചെയ്യുന്നു (No Download to Server)
-    await sock.sendMessage(chat, {
-      audio: { url: finalAudioUrl },
-      mimetype: "audio/mpeg",
-      fileName: `${track.title}.mp3`,
-      contextInfo: {
-        externalAdReply: {
-          title: track.title,
-          body: 'Asura MD 👺',
-          thumbnailUrl: track.thumbnail,
-          mediaType: 1,
-          renderLargerThumbnail: true,
-        }
-      }
-    }, { quoted: msg });
+        // 5. Send Audio Directly 
+        await sock.sendMessage(chatId, {
+            audio: { url: finalAudioUrl },
+            mimetype: 'audio/mpeg',
+            fileName: `${video.title}.mp3`,
+            contextInfo: {
+                externalAdReply: {
+                    title: video.title,
+                    body: 'Asura MD Music Player 👺',
+                    thumbnailUrl: video.thumbnail,
+                    mediaType: 1,
+                    showAdAttribution: true,
+                    renderLargerThumbnail: true,
+                    sourceUrl: videoUrl
+                }
+            }
+        }, { quoted: msg });
 
-  } catch (err) {
-    console.error(err);
-    await sock.sendMessage(chat, { text: "❌ All servers are busy. Please try again later!" });
-  }
+    } catch (error) {
+        console.error('[MUSIC ERROR]:', error);
+        await sock.sendMessage(chatId, { text: '❌ Connection failed. Please try again later.' }, { quoted: msg });
+    }
 };
