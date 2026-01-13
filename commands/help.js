@@ -51,7 +51,7 @@ export default async (sock, msg, args) => {
 ┃ ⊙👤 .Owner–Get creator's info.
 ┃ ⊙📓 .Help–Get usage support.
 ┃ ⊙🤯 .Play–built-in games.
-┃ ⊙👁️ .vv – View once media retriever
+┃ ⊙👁️ .view–View once media retriever
 ┃ ⊙📢 .Tagall–Mention all group members.
 ┃ ⊙📷 .Image <name>–Search and save photos
 ╚━━━⛥❖⛥━━━❥❥❥
