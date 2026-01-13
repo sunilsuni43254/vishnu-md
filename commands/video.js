@@ -1,5 +1,6 @@
 import yts from "yt-search";
 import { exec } from "child_process";
+import fs from "fs";
 
 export default async (sock, msg, args) => {
   const chat = msg.key.remoteJid;
@@ -10,7 +11,6 @@ export default async (sock, msg, args) => {
   }
 
   try {
-    // 1. വീഡിയോ സെർച്ച് ചെയ്യുന്നു
     const search = await yts(searchText);
     const video = search.videos[0];
 
@@ -20,50 +20,52 @@ export default async (sock, msg, args) => {
 
     const videoUrl = video.url;
     const title = video.title;
-    const channel = video.author.name;
-    const views = video.views;
-    const date = video.ago;
 
+    // ലോക്കൽ തംബ്‌നെയിൽ പാത്ത്
+    const thumbPath = "./media/thumb.jpg";
+    const imageContent = fs.existsSync(thumbPath) ? fs.readFileSync(thumbPath) : { url: video.thumbnail };
+
+    // ഡിസൈൻ ക്യാപ്ഷൻ
     const captionText = `*👺⃝⃘̉̉━━━━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
 *⊹* 🪔 *Video Download*
 *✧* 「 \`👺Asura MD\` 」
-*╰──────────────❂*
+*╰─────────────────❂*
 ╭•°•❲ *Downloading...* ❳•°•
  ⊙🎬 *TITLE:* ${title}
- ⊙📺 *CHANNEL:* ${channel}
- ⊙👀 *VIEWS:* ${views}
- ⊙⏳ *AGO:* ${date}
 *◀︎ •၊၊||၊||||။‌‌‌‌၊||••*
-╰╌╌╌╌╌╌╌╌╌╌╌╌࿐
-> 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
-> *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
+╰╌╌╌╌╌╌╌╌╌╌╌╌࿐`;
 
-    // 2. തംബ്‌നെയിൽ അയക്കുന്നു
-    await sock.sendMessage(chat, { image: { url: video.thumbnail }, caption: captionText });
+    // 1. തംബ്‌നെയിൽ അയക്കുന്നു
+    await sock.sendMessage(chat, { image: imageContent, caption: captionText });
 
-    // 3. വീഡിയോയുടെ ഡയറക്ട് ലിങ്ക് എടുക്കുന്നു (No Downloading to Disk)
-    // yt-dlp ഉപയോഗിച്ച് ഡൗൺലോഡ് ചെയ്യാതെ വീഡിയോ URL മാത്രം എടുക്കുന്നു
-    exec(`yt-dlp -g -f "best[ext=mp4][height<=480]" "${videoUrl}"`, async (error, stdout) => {
-      if (error || !stdout) {
-        console.error("Link Extraction Error:", error);
-        return sock.sendMessage(chat, { text: "Error fetching video link! ❌" });
+    // 2. താൽക്കാലികമായി ഫയൽ സേവ് ചെയ്യാൻ ഒരു പേര് നൽകുന്നു
+    const fileName = `./media/temp_${Date.now()}.mp4`;
+
+    // 3. yt-dlp ഉപയോഗിച്ച് വീഡിയോ ഡൗൺലോഡ് ചെയ്യുന്നു (480p quality)
+    exec(`yt-dlp -f "best[ext=mp4][height<=480]" "${videoUrl}" -o "${fileName}"`, async (error) => {
+      if (error) {
+        console.error("Download Error:", error);
+        return sock.sendMessage(chat, { text: "Error ❌" });
       }
 
-      const directUrl = stdout.trim();
+      // 4. വീഡിയോ അയക്കുന്നു
+      if (fs.existsSync(fileName)) {
+        await sock.sendMessage(chat, {
+          video: fs.readFileSync(fileName),
+          mimetype: 'video/mp4',
+          caption: `*${title}*`
+        }, { quoted: msg });
 
-      // 4. വീഡിയോ നേരിട്ട് അയക്കുന്നു
-      await sock.sendMessage(chat, {
-        video: { url: directUrl },
-        mimetype: 'video/mp4',
-        caption: `*${title}*`
-      }, { quoted: msg });
+        // 5. അയച്ചതിന് ശേഷം ഫയൽ ഡിലീറ്റ് ചെയ്യുന്നു (Storage ലാഭിക്കാൻ)
+        fs.unlinkSync(fileName);
+      }
     });
 
   } catch (err) {
     console.error("Main Error:", err);
-    sock.sendMessage(chat, { text: "Something went wrong! 😢" });
+    sock.sendMessage(chat, { text: "😢" });
   }
 };
