@@ -49,7 +49,7 @@ export default async (sock) => {
 
 *👤 ᴜsᴇʀ:* @${jid.split('@')[0]}
 *✨ ɢʀᴏᴜᴘ:* ${ (await sock.groupMetadata(chat)).subject }
-
+> 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© 👺ᴀsᴜʀᴀ ᴍᴅ*`;
 
                 const sentMsg = await sock.sendMessage(chat, {
