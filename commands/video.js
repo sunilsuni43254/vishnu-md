@@ -1,80 +1,69 @@
-import axios from 'axios';
-import yts from 'yt-search';
+import yts from "yt-search";
+import { exec } from "child_process";
 
 export default async (sock, msg, args) => {
-    const chatId = msg.key.remoteJid;
-    const searchQuery = args.join(" ");
+  const chat = msg.key.remoteJid;
+  const searchText = args.join(" ");
 
-    if (!searchQuery) {
-        return sock.sendMessage(chatId, { text: '❌ Please provide a name or YouTube link!' }, { quoted: msg });
+  if (!searchText) {
+    return sock.sendMessage(chat, { text: "Usage: .video <name or link>" });
+  }
+
+  try {
+    // 1. വീഡിയോ സെർച്ച് ചെയ്യുന്നു
+    const search = await yts(searchText);
+    const video = search.videos[0];
+
+    if (!video) {
+      return sock.sendMessage(chat, { text: "Video Not Found 😢" });
     }
 
-    try {
-        // 1. YouTube Search
-        const { videos } = await yts(searchQuery);
-        if (!videos || videos.length === 0) return sock.sendMessage(chatId, { text: '❌ Video not found!' });
-        
-        const video = videos[0];
-        const videoUrl = video.url;
+    const videoUrl = video.url;
+    const title = video.title;
+    const channel = video.author.name;
+    const views = video.views;
+    const date = video.ago;
 
-        // 2. List of 5 Powerful APIs
-        const apiList = [
-            `https://api.siputzx.my.id/api/d/ytmp4?url=${videoUrl}`,
-            `https://api.zenkey.my.id/api/download/ytmp4?url=${videoUrl}`,
-            `https://widipe.com/download/ytdl?url=${videoUrl}`,
-            `https://api.boxi.my.id/api/youtube/mp4?url=${videoUrl}`,
-            `https://api.agatz.xyz/api/ytmp4?url=${videoUrl}`
-        ];
-
-        let downloadUrl = null;
-        let success = false;
-
-        // 3. Trying APIs one by one (Fallback System)
-        for (const api of apiList) {
-            try {
-                const res = await axios.get(api);
-                // ഓരോ API-യുടെയും റെസ്പോൺസ് സ്ട്രക്ചർ വ്യത്യസ്തമായിരിക്കും
-                downloadUrl = res.data?.data?.dl || res.data?.result?.url || res.data?.result?.download || res.data?.url;
-                
-                if (downloadUrl) {
-                    success = true;
-                    break; 
-                }
-            } catch (e) {
-                continue; // അടുത്ത API ട്രൈ ചെയ്യും
-            }
-        }
-
-        if (!success || !downloadUrl) {
-            throw new Error("All APIs are currently busy.");
-        }
-
-        // 4. Asura MD Design Caption
-        const caption = `*👺⃝⃘̉̉━━━━━━━━◆◆◆*
+    const captionText = `*👺⃝⃘̉̉━━━━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
-*⊹* 🎬 *Video Downloaded*
+*⊹* 🪔 *Video Download*
 *✧* 「 \`👺Asura MD\` 」
-*╰───────────❂*
- ⊙🎬 *TITLE:* ${video.title}
- ⊙⏳ *DURATION:* ${video.timestamp}
- ⊙🔗 *LINK:* ${videoUrl}
-*◀︎ •၊၊||၊||||။‌၊||••*
-╰╌╌╌╌╌╌╌╌╌╌࿐
+*╰─────────────────❂*
+╭•°•❲ *Downloading...* ❳•°•
+ ⊙🎬 *TITLE:* ${title}
+ ⊙📺 *CHANNEL:* ${channel}
+ ⊙👀 *VIEWS:* ${views}
+ ⊙⏳ *AGO:* ${date}
+*◀︎ •၊၊||၊||||။‌‌‌‌၊||••*
+╰╌╌╌╌╌╌╌╌╌╌╌╌࿐
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
-> *© ᴄʀᴇᴀᴛᴇ BY 👺Asura MD*`;
+> *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
-        // 5. Send Video (No local download, streaming via URL)
-        await sock.sendMessage(chatId, {
-            video: { url: downloadUrl },
-            caption: caption,
-            mimetype: 'video/mp4',
-            fileName: `${video.title}.mp4`
-        }, { quoted: msg });
+    // 2. തംബ്‌നെയിൽ അയക്കുന്നു
+    await sock.sendMessage(chat, { image: { url: video.thumbnail }, caption: captionText });
 
-    } catch (error) {
-        console.error(error);
-        await sock.sendMessage(chatId, { text: '❌ Failed to process video. Please try again later.' });
-    }
+    // 3. വീഡിയോയുടെ ഡയറക്ട് ലിങ്ക് എടുക്കുന്നു (No Downloading to Disk)
+    // yt-dlp ഉപയോഗിച്ച് ഡൗൺലോഡ് ചെയ്യാതെ വീഡിയോ URL മാത്രം എടുക്കുന്നു
+    exec(`yt-dlp -g -f "best[ext=mp4][height<=480]" "${videoUrl}"`, async (error, stdout) => {
+      if (error || !stdout) {
+        console.error("Link Extraction Error:", error);
+        return sock.sendMessage(chat, { text: "Error fetching video link! ❌" });
+      }
+
+      const directUrl = stdout.trim();
+
+      // 4. വീഡിയോ നേരിട്ട് അയക്കുന്നു
+      await sock.sendMessage(chat, {
+        video: { url: directUrl },
+        mimetype: 'video/mp4',
+        caption: `*${title}*`
+      }, { quoted: msg });
+    });
+
+  } catch (err) {
+    console.error("Main Error:", err);
+    sock.sendMessage(chat, { text: "Something went wrong! 😢" });
+  }
 };
