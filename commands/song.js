@@ -65,6 +65,7 @@ export default async (sock, msg, args) => {
  ⊙⏳ *DURATION:* ${video.timestamp}
 *◀︎ •၊၊||၊||||။‌၊||••*
 ╰╌╌╌╌╌╌╌╌╌╌࿐
+> 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇ BY 👺Asura MD*`;
 
         // 5. Send Thumbnail first
