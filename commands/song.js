@@ -30,7 +30,7 @@ export default async (sock, msg, args) => {
 *┊ ☪︎⋆*
 *⊹* 🪔 *Song Download*
 *✧* 「 \`👺Asura MD\` 」
-*╰─────────────────❂*
+*╰─────────────❂*
 ╭•°•❲ *Downloading...* ❳•°•
  ⊙🎵 *TITLE:* ${title}
  ⊙📺 *CHANNEL:* ${channel}
