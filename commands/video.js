@@ -1,53 +1,62 @@
-import axios from "axios";
+import axios from 'axios';
+import yts from 'yt-search';
 
 export default async (sock, msg, args) => {
-  const chat = msg.key.remoteJid;
-  const searchQuery = args.join(" ");
+    const chatId = msg.key.remoteJid;
+    const searchQuery = args.join(" ");
+    const thumbPath = "./media/thumb.jpg";
 
-  if (!searchQuery) {
-    return sock.sendMessage(chat, { text: "❌ Usage: *.status* [name]" });
-  }
-
-  try {
-    // 1. Pinterest-ൽ നിന്ന് നേരിട്ട് വീഡിയോ ഡാറ്റ വലിച്ച് എടുക്കുന്നു
-    // ഇതിന് പ്രത്യേകം API Key ആവശ്യമില്ല, ഇത് ബ്ലോക്ക് ആകാൻ സാധ്യത കുറവാണ്.
-    const searchRes = await axios.get(`https://www.pinterest.com/resource/BaseSearchResource/get/?data=%7B%22options%22%3A%7B%22query%22%3A%22${encodeURIComponent(searchQuery + " status video")}%22%2C%22scope%22%3A%22pins%22%2C%22page_size%22%3A1%7D%7D`);
-
-    const pins = searchRes.data.resource_response.data.results;
-    if (!pins || pins.length === 0) return sock.sendMessage(chat, { text: "❌ No Video Found!" });
-
-    // വീഡിയോ ഫയൽ നേരിട്ട് കണ്ടെത്തുന്നു
-    const videoUrl = pins[0].videos?.video_list?.V_720P?.url || pins[0].videos?.video_list?.V_HLSV3?.url;
-
-    if (!videoUrl) {
-      return sock.sendMessage(chat, { text: "❌ Video file not available for this search!" });
+    if (!searchQuery) {
+        return sock.sendMessage(chatId, { text: '❌ What video do you want to download?' }, { quoted: msg });
     }
 
-    // നിങ്ങളുടെ അതേ ഡിസൈൻ ക്യാപ്ഷൻ
-    const infoText = `*👺⃝⃘̉̉━━━━━━━━◆◆◆*
+    try {
+        // 1. YouTube Search
+        const { videos } = await yts(searchQuery);
+        if (!videos || videos.length === 0) {
+            return sock.sendMessage(chatId, { text: '❌ No videos found!' }, { quoted: msg });
+        }
+
+        const video = videos[0];
+        const videoUrl = video.url;
+
+        // 2. Fetch Direct Stream URL (No Local Download)
+        // Using a reliable public indexer to get mp4 link
+        const dlRes = await axios.get(`https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(videoUrl)}`);
+        
+        if (!dlRes.data || !dlRes.data.data || !dlRes.data.data.dl) {
+            throw new Error('Video source not available');
+        }
+
+        const finalVideoUrl = dlRes.data.data.dl;
+
+        // 3. Your Specific Asura Design
+        const infoText = `*👺⃝⃘̉̉━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
-*⊹* 🎬 *Status Download*
+*⊹* 🎬 *Video Download*
 *✧* 「 \`👺Asura MD\` 」
 *╰───────────❂*
-╭•°•❲ *Direct Sending...* ❳•°•
- ⊙🎬 *QUERY:* ${searchQuery}
- ⊙📺 *SOURCE:* 😜
- ⊙⏳ *STATUS:* 4k quality
+╭•°•❲ *Streaming...* ❳•°•
+ ⊙🎬 *TITLE:* ${video.title}
+ ⊙📺 *CHANNEL:* ${video.author.name}
+ ⊙⏳ *DURATION:* ${video.timestamp}
 *◀︎ •၊၊||၊||||။‌၊||••*
 ╰╌╌╌╌╌╌╌╌╌╌࿐
+> 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇ BY 👺Asura MD*`;
 
-    // ✅ ഫയൽ നേരിട്ട് അയക്കുന്നു
-    await sock.sendMessage(chat, {
-      video: { url: videoUrl },
-      caption: infoText,
-      mimetype: "video/mp4"
-    }, { quoted: msg });
+        // 4. Send Video Directly (No Local Storage Use)
+        await sock.sendMessage(chatId, {
+            video: { url: finalVideoUrl },
+            caption: infoText,
+            mimetype: 'video/mp4',
+            fileName: `${video.title}.mp4`
+        }, { quoted: msg });
 
-  } catch (err) {
-    console.error(err);
-    await sock.sendMessage(chat, { text: "❌ Connection error! Try again later." });
-  }
+    } catch (error) {
+        console.error('[VIDEO ERROR]:', error);
+        await sock.sendMessage(chatId, { text: '❌ Download failed. The video might be too large or the server is busy.' }, { quoted: msg });
+    }
 };
