@@ -2,50 +2,55 @@ import fs from 'fs';
 
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
+    const pushName = msg.pushName || "Human";
 
     try {
-        // 1. റിയാക്ഷൻ നൽകുന്നു
-        await sock.sendMessage(chat, { react: { text: "⏳", key: msg.key } });
+        // 1. Initial Reaction
+        await sock.sendMessage(chat, { react: { text: "🤣", key: msg.key } });
 
-        // 2. ആനിമേഷൻ (എണ്ണം കുറച്ചു, സമയം കൂട്ടി)
-        const { key } = await sock.sendMessage(chat, { text: "👺 Asura MD Loading..." });
+        // 2. 10-Level Roasting Animation
+        const { key } = await sock.sendMessage(chat, { text: "👺 Asura Brain Scanner Starting..." });
 
-        const frames = [
-            "▰▱▱▱▱▱▱▱▱▱ 10%",
-            "▰▰▰▰▱▱▱▱▱▱ 40%",
-            "▰▰▰▰▰▰▰▱▱▱ 70%",
-            "▰▰▰▰▰▰▰▰▰▰ 100%",
-            "🚀 Asura MD Engine Ready!",
-            "🤣 Processing Fun Mode...",
-            "✅ Sending Files Now!"
+        const levels = [
+            { p: "10%", m: "🔍 Scanning for signs of intelligence..." },
+            { p: "20%", m: "⚠️ Error: Brain cells not found. Searching again..." },
+            { p: "30%", m: "🧬 Analyzing DNA: 50% Human, 50% Monkey..." },
+            { p: "40%", m: "🕵️ Locating common sense... Still 0% found." },
+            { p: "50%", m: "🧪 Experimenting: What happens if we add logic? (Failed)" },
+            { p: "60%", m: "🤡 Level 6: Clown Energy detected at maximum!" },
+            { p: "70%", m: "🛸 Calling Aliens to take you back home..." },
+            { p: "80%", m: "🧼 Washing your dirty thoughts... Please wait." },
+            { p: "90%", m: "🔥 Preparing the final roast for @${pushName}..." },
+            { p: "100%", m: "👺 SCAN COMPLETE: YOU ARE A CERTIFIED LEGENDARY IDIOT!" }
         ];
 
-        for (let frame of frames) {
-            // ബാൻ ഒഴിവാക്കാൻ സമയം 1.2 സെക്കൻഡ് ആക്കി
-            await new Promise(resolve => setTimeout(resolve, 1200)); 
-            await sock.sendMessage(chat, { text: frame, edit: key });
+        for (let level of levels) {
+            await new Promise(resolve => setTimeout(resolve, 1000)); 
+            let bar = "▰".repeat(Math.floor(parseInt(level.p)/10)) + "▱".repeat(10 - Math.floor(parseInt(level.p)/10));
+            await sock.sendMessage(chat, { text: `*${bar} ${level.p}*\n${level.m}`, edit: key });
         }
 
-        // 3. ഫൈനൽ ഡിസൈൻ ക്യാപ്ഷൻ
-        const infoText = `*👺⃝⃘̉̉━━━━━━━━◆◆◆*
+        // 3. Final Design Caption
+        const funText = `*👺⃝⃘̉̉━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
-*⊹* 🪔 *Asura Fun Service*
+*⊹* 🧪 *Asura Roast Report*
 *✧* 「 \`👺Asura MD\` 」
 *╰───────────────❂*
-╭•°•❲ *Process Completed* ❳•°•
- ⊙🎬 *STATUS:* SUCCESS ✅
- ⊙📺 *SERVICE:* FUN MOD
- ⊙⏳ *SPEED:* 1.2ms
+╭•°•❲ *Diagnostic Result* ❳•°•
+ ⊙🎭 *TYPE:* Professional Joker
+ ⊙🧠 *BRAIN SIZE:* Peanut
+ ⊙🔋 *IQ LEVEL:* -999%
 *◀︎ •၊၊||၊||||။‌၊||••*
 ╰╌╌╌╌╌╌╌╌╌╌࿐
 ╔━━━━━━━━━━━❥❥❥
-┃👺Asura Fun Mode Activated!
-┃⁣🚽=📶2 Minutes
-┃🚽+📱=📶5 Minutes
-┃🚽+📱+ ⁣📶=10 Minutes
-┃🚽+📱+📶+🔋= Infinite
+┃👺 *Roast Activated for:* ${pushName}
+┃⁣
+┃⁣🤣 If stupidity was a job, you'd be a CEO!
+┃🚶‍♂️ Your brain is like Internet Explorer.
+┃📦 Even Google can't find your logic.
+┃💀 You are the reason shampoo has instructions.
 ╚━━━━⛥❖⛥━━━━❥❥❥
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇ BY 👺Asura MD*`;
@@ -53,17 +58,17 @@ export default async (sock, msg, args) => {
         const imagePath = './media/thumb.jpg';
         const songPath = './media/song.opus';
 
-        // 4. ഇമേജ് അയക്കുന്നു (പഴയ ആനിമേഷൻ മെസ്സേജ് ഡിലീറ്റ് ചെയ്യണം എന്നുണ്ടെങ്കിൽ ഡിലീറ്റ് കമാൻഡ് ചേർക്കാം)
+        // 4. Send Results with Image
         if (fs.existsSync(imagePath)) {
             await sock.sendMessage(chat, { 
                 image: { url: imagePath }, 
-                caption: infoText 
+                caption: funText 
             }, { quoted: msg });
         } else {
-            await sock.sendMessage(chat, { text: infoText }, { quoted: msg });
+            await sock.sendMessage(chat, { text: funText }, { quoted: msg });
         }
 
-        // 5. ഓഡിയോ ഫയൽ
+        // 5. Send Audio (Funky/Funny track)
         if (fs.existsSync(songPath)) {
             await sock.sendMessage(chat, { 
                 audio: { url: songPath }, 
@@ -72,10 +77,10 @@ export default async (sock, msg, args) => {
             }, { quoted: msg });
         }
 
-        // ഫൈനൽ റിയാക്ഷൻ
-        await sock.sendMessage(chat, { react: { text: "🤣", key: msg.key } });
+        // Final Reaction
+        await sock.sendMessage(chat, { react: { text: "💀", key: msg.key } });
 
     } catch (error) {
-        console.error("Fun Command Error:", error);
+        console.error("Ultimate Fun Error:", error);
     }
 };
