@@ -50,7 +50,7 @@ export default async (sock, msg, args) => {
 ┃ ⊙🆎️ .Font <text>–Change text to stylish fonts.
 ┃ ⊙👤 .Owner–Get creator's info.
 ┃ ⊙📓 .Help–Get usage support.
-┃ ⊙🎰 .Play–built-in games.
+┃ ⊙🤯 .Play–built-in games.
 ┃ ⊙📢 .Tagall–Mention all group members.
 ┃ ⊙📷 .Image <name>–Search and save photos
 ╚━━━⛥❖⛥━━━❥❥❥
