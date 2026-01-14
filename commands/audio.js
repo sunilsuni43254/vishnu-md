@@ -67,7 +67,16 @@ export default async (sock, msg, args) => {
 
   
     const response = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
-    const audioBuffer = Buffer.from(response.data, 'binary');
+    const response = await axios({
+      method: 'get',
+      url: downloadUrl,
+      responseType: 'arraybuffer',
+      headers: {
+        'User-Agent': 'Mozilla/5.0' 
+      }
+    });
+
+    const audioBuffer = Buffer.from(response.data);
 
     // 4. ഓഡിയോ അയക്കുന്നു
     await sock.sendMessage(chat, {
