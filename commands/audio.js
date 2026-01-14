@@ -16,7 +16,7 @@ export default async (sock, msg, args) => {
     const video = search.videos[0];
 
     if (!video) {
-      return sock.sendMessage(chat, { text: "Song Not Found 😢" });
+      return sock.sendMessage(chat, { text: "Audio Not Found 😢" });
     }
 
     const videoUrl = video.url;
@@ -45,9 +45,13 @@ export default async (sock, msg, args) => {
     //  (Local image path: ./media/thumb.jpg)
     const thumbPath = "./media/thumb.jpg";
     const imageContent = fs.existsSync(thumbPath) ? fs.readFileSync(thumbPath) : { url: video.thumbnail };
-    await sock.sendMessage(chat, { image: imageContent, caption: captionText });
+    
+    await sock.sendMessage(chat, { 
+      image: imageContent, 
+      caption: `*Downloading:* ${title}` 
+    });
 
-    // No download 
+    // 2. API-ൽ നിന്ന് ലിങ്ക് എടുക്കുന്നു
     let downloadUrl = null;
     try {
       const resYupra = await axios.get(`https://api.yupra.my.id/api/downloader/ytmp3?url=${encodeURIComponent(videoUrl)}`);
@@ -57,40 +61,23 @@ export default async (sock, msg, args) => {
         const resOkatsu = await axios.get(`https://okatsu-rolezapiiz.vercel.app/downloader/ytmp3?url=${encodeURIComponent(videoUrl)}`);
         downloadUrl = resOkatsu.data?.dl;
       }
-    } catch (e) { console.error("API Link Error"); }
+    } catch (e) { console.error("API Link Fetching Failed"); }
 
-    if (!downloadUrl) return sock.sendMessage(chat, { text: " ❌" });
+    if (!downloadUrl) return sock.sendMessage(chat, { text: " loading" });
 
-    // temporary download(Buffer Method)
-    const fileName = `./media/song_${Date.now()}.mp3`;
-    const response = await axios({
-      method: 'get',
-      url: downloadUrl,
-      responseType: 'stream'
-    });
+  
+    const response = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
+    const audioBuffer = Buffer.from(response.data, 'binary');
 
-    const writer = fs.createWriteStream(fileName);
-    response.data.pipe(writer);
-
-    writer.on('finish', async () => {
- 
-      await sock.sendMessage(chat, {
-        audio: fs.readFileSync(fileName),
-        mimetype: 'audio/mpeg',
-        ptt: false 
-      }, { quoted: msg });
-
-      // 5. അയച്ച ശേഷം ഫയൽ ഡിലീറ്റ് ചെയ്യുന്നു
-      fs.unlinkSync(fileName);
-    });
-
-    writer.on('error', (err) => {
-      console.error("Download Error:", err);
-      sock.sendMessage(chat, { text: " 😢" });
-    });
+    // 4. ഓഡിയോ അയക്കുന്നു
+    await sock.sendMessage(chat, {
+      audio: audioBuffer,
+      mimetype: 'audio/mpeg',
+      ptt: false 
+    }, { quoted: msg });
 
   } catch (err) {
-    console.error("Main Error:", err);
+    console.error("Streaming Error:", err);
     sock.sendMessage(chat, { text: "Something went wrong! 😢" });
   }
 };
