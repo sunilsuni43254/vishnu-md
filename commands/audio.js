@@ -1,20 +1,17 @@
 import yts from "yt-search";
-import { exec } from "child_process";
+import axios from "axios";
 import fs from "fs";
-import { promisify } from "util";
-
-const execPromise = promisify(exec);
 
 export default async (sock, msg, args) => {
   const chat = msg.key.remoteJid;
   const searchText = args.join(" ");
 
   if (!searchText) {
-    return sock.sendMessage(chat, { text: "Usage: .audio <song name>" });
+    return sock.sendMessage(chat, { text: "Usage: .audio <name>" });
   }
 
   try {
-    // 1. YouTube Search
+    // 1. യൂട്യൂബ് സെർച്ച്
     const search = await yts(searchText);
     const video = search.videos[0];
 
@@ -24,6 +21,9 @@ export default async (sock, msg, args) => {
 
     const videoUrl = video.url;
     const title = video.title;
+    const channel = video.author.name;
+    const views = video.views;
+    const date = video.ago;
 
     const captionText = `*👺⃝⃘̉̉━━━━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
@@ -34,43 +34,50 @@ export default async (sock, msg, args) => {
 *╰─────────────────❂*
 ╭•°•❲ *Downloading...* ❳•°•
  ⊙🎵 *TITLE:* ${title}
- ⊙📺 *CHANNEL:* ${video.author.name}
- ⊙👀 *VIEWS:* ${video.views}
- ⊙⏳ *AGO:* ${video.ago}
+ ⊙📺 *CHANNEL:* ${channel}
+ ⊙👀 *VIEWS:* ${views}
+ ⊙⏳ *AGO:* ${date}
 *◀︎ •၊၊||၊||||။‌‌‌‌၊||••*
 ╰╌╌╌╌╌╌╌╌╌╌╌╌࿐
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
-    // 2. തംബ്‌നെയിൽ അയക്കുന്നു
+    // . തംബ്‌നെയിൽ അയക്കുന്നു (Local image path: ./media/thumb.jpg)
     const thumbPath = "./media/thumb.jpg";
     const imageContent = fs.existsSync(thumbPath) ? fs.readFileSync(thumbPath) : { url: video.thumbnail };
-    
     await sock.sendMessage(chat, { image: imageContent, caption: captionText });
 
-    // 3. താൽക്കാലിക ഫയൽ സെറ്റ് ചെയ്യുന്നു
-    const tempFile = `./media/${Date.now()}.mp3`;
+    // --- STREAMING LOGIC (NO SAVE) ---
+    // yt-dlp ഉപയോഗിച്ച് ഡാറ്റ നേരിട്ട് സ്റ്റാൻഡേർഡ് ഔട്ട്‌പുട്ടിലേക്ക് (stdout) എടുക്കുന്നു
+    const ytProcess = spawn("yt-dlp", [
+      "-f", "bestaudio",
+      "--extract-audio",
+      "--audio-format", "mp3",
+      "--audio-quality", "128K",
+      "-o", "-", // ഡാറ്റ ഫയലിലേക്ക് മാറ്റാതെ നേരിട്ട് തരുന്നു
+      video.url
+    ]);
 
-    const command = `yt-dlp -f "bestaudio" --extract-audio --audio-format mp3 --audio-quality 128K "${videoUrl}" -o "${tempFile}"`;
+    let chunks = [];
+    ytProcess.stdout.on("data", (chunk) => chunks.push(chunk));
 
-    await execPromise(command);
-
-    if (fs.existsSync(tempFile)) {
-      // 5. ഓഡിയോ ഫയൽ അയക്കുന്നു
+    ytProcess.on("close", async () => {
+      const audioBuffer = Buffer.concat(chunks);
+      
       await sock.sendMessage(chat, {
-        audio: fs.readFileSync(tempFile),
+        audio: audioBuffer,
         mimetype: 'audio/mpeg',
         ptt: false 
       }, { quoted: msg });
+    });
 
-      // 6. ഫയൽ ഡിലീറ്റ് ചെയ്യുന്നു (Storage ക്ലീൻ ആയിരിക്കും)
-      fs.unlinkSync(tempFile);
-    } else {
-      throw new Error("File not found after download");
-    }
+    ytProcess.on("error", (err) => {
+      console.error("YT-DLP Error:", err);
+      sock.sendMessage(chat, { text: "Streaming failed! ❌" });
+    });
 
   } catch (err) {
-    console.error("Permanent Error:", err);
-    sock.sendMessage(chat, { text: "Error: ! ❌" });
+    console.error("Main Error:", err);
+    sock.sendMessage(chat, { text: "Something went wrong! 😢" });
   }
 };
