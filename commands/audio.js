@@ -1,5 +1,5 @@
 import yts from "yt-search";
-import { exec } from "child_process";
+import axios from "axios";
 import fs from "fs";
 
 export default async (sock, msg, args) => {
@@ -7,7 +7,7 @@ export default async (sock, msg, args) => {
   const searchText = args.join(" ");
 
   if (!searchText) {
-    return sock.sendMessage(chat, { text: "Usage: .audio <song name>" });
+    return sock.sendMessage(chat, { text: "Usage: .audio < name>" });
   }
 
   try {
@@ -29,7 +29,7 @@ export default async (sock, msg, args) => {
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
-*⊹* 🪔 *Audio Download*
+*⊹* 🪔 *Aduio Download*
 *✧* 「 \`👺Asura MD\` 」
 *╰─────────────────❂*
 ╭•°•❲ *Downloading...* ❳•°•
@@ -42,32 +42,41 @@ export default async (sock, msg, args) => {
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
 
-    // 2. ലോക്കൽ തംബ്‌നെയിൽ അയക്കുന്നു
-    // ./media/thumb.jpg അവിടെ ഉണ്ടെന്ന് ഉറപ്പുവരുത്തുക
+    // 2. തംബ്‌നെയിൽ അയക്കുന്നു (Local image path: ./media/thumb.jpg)
     const thumbPath = "./media/thumb.jpg";
     const imageContent = fs.existsSync(thumbPath) ? fs.readFileSync(thumbPath) : { url: video.thumbnail };
 
-    await sock.sendMessage(chat, { 
-      image: imageContent, 
-      caption: captionText 
-    });
+    await sock.sendMessage(chat, { image: imageContent, caption: captionText });
 
-    // 3. ഓഡിയോ ഡയറക്ട് ലിങ്ക് എക്സ്ട്രാക്റ്റ് ചെയ്യുന്നു
-    exec(`yt-dlp -g -f "bestaudio" "${videoUrl}"`, async (error, stdout) => {
-      if (error || !stdout) {
-        console.error("Audio Link Error:", error);
-        return sock.sendMessage(chat, { text: "Error fetching audio link! ❌" });
+    // 3. API വഴി ഡൗൺലോഡ് ലിങ്ക് എടുക്കുന്നു
+    let downloadUrl = null;
+
+    try {
+      // First try Yupra API
+      const resYupra = await axios.get(`https://api.yupra.my.id/api/downloader/ytmp3?url=${encodeURIComponent(videoUrl)}`);
+      if (resYupra.data?.success && resYupra.data?.data?.download_url) {
+        downloadUrl = resYupra.data.data.download_url;
+      } else {
+        // Fallback to Okatsu API
+        const resOkatsu = await axios.get(`https://okatsu-rolezapiiz.vercel.app/downloader/ytmp3?url=${encodeURIComponent(videoUrl)}`);
+        if (resOkatsu.data?.dl) {
+          downloadUrl = resOkatsu.data.dl;
+        }
       }
+    } catch (apiErr) {
+      console.error("API Error:", apiErr);
+    }
 
-      const directUrl = stdout.trim();
-
-      // 4. ഓഡിയോ ഫയൽ അയക്കുന്നു
+    // 4. ഓഡിയോ നേരിട്ട് അയക്കുന്നു
+    if (downloadUrl) {
       await sock.sendMessage(chat, {
-        audio: { url: directUrl },
-        mimetype: 'audio/mp4',
+        audio: { url: downloadUrl },
+        mimetype: 'audio/ogg,
         ptt: false 
       }, { quoted: msg });
-    });
+    } else {
+      sock.sendMessage(chat, { text: "Error: Could not fetch download link. ❌" });
+    }
 
   } catch (err) {
     console.error("Main Error:", err);
