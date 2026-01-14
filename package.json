@@ -21,8 +21,6 @@
     "g-i-s": "latest",   
     "wa-sticker-formatter": "latest",
     "qrcode-terminal": "latest",
-    "child_process": "latest",
-    "util": "latest",
     "yt-search": "latest"
   }
 }
