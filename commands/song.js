@@ -104,14 +104,14 @@ export default async (sock, msg, args) => {
         }
       }
     }, { quoted: msg });
-
-    // 2. ✅ Voice Note (PTT conversion via FFmpeg stream)
+    //  ✅ Voice Note (PTT) 
     const voiceStream = new PassThrough();
     ffmpeg(finalAudioUrl)
-      .audioFrequency(48000)
-      .audioChannels(1)
-      .toFormat('ogg')
+      .vn() 
       .audioCodec('libopus')
+      .audioChannels(1)
+      .audioFrequency(48000)
+      .toFormat('opus') 
       .on('error', (err) => console.log('FFmpeg Voice Error:', err.message))
       .pipe(voiceStream);
 
