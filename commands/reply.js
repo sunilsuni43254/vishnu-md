@@ -1,86 +1,112 @@
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
-    const botId = sock.user.id.split(':')[0];
-    const senderId = (msg.key.participant || msg.key.remoteJid).split('@')[0].split(':')[0];
-
-    // 🛡️ OWNER ONLY (The person who linked the bot)
-    const isOwner = botId === senderId;
+    const isGroup = chat.endsWith('@g.us');
+    const sender = msg.key.participant || msg.key.remoteJid;
     
+    // Initialize global storage in memory (No Database Save)
     if (!global.autoResponseMap) global.autoResponseMap = {};
 
-    // 1. DELETE ALL
-    if (args[0] === 'delall' && isOwner) {
-        global.autoResponseMap = {};
-        return await sock.sendMessage(chat, { text: "🗑️ *Database Cleared by 𓆩 👺ASURA MD 𓆪*" });
+    // Admin Check Logic
+    let isAdmin = false;
+    if (isGroup) {
+        const groupMetadata = await sock.groupMetadata(chat);
+        const participants = groupMetadata.participants;
+        const user = participants.find(p => p.id === sender);
+        isAdmin = user?.admin === 'admin' || user?.admin === 'superadmin';
+    } else {
+        isAdmin = true; 
     }
 
-    // 2. DELETE SPECIFIC
-    if (args[0] === 'del' && isOwner) {
-        const trigger = args.slice(1).join(" ").toLowerCase().trim();
-        if (global.autoResponseMap[trigger]) {
-            delete global.autoResponseMap[trigger];
-            return await sock.sendMessage(chat, { text: `✅ Deleted trigger: *${trigger}*` });
+    // Helper Function for Human-like Typing
+    const sendWithTyping = async (jid, text, quoted = null) => {
+        await sock.sendPresenceUpdate('composing', jid); // Typing... effect
+        await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5s delay for realism
+        await sock.sendMessage(jid, { text: text }, { quoted: quoted });
+        await sock.sendPresenceUpdate('paused', jid);
+    };
+
+    // 1. DELETE ALL REPLIES
+    if (args[0] === 'delall') {
+        if (!isAdmin) return await sendWithTyping(chat, "❌ *Access Denied:* Only Admins can clear the database.");
+        global.autoResponseMap = {};
+        return await sendWithTyping(chat, "🗑️ *Database Cleared:* All auto-replies have been removed.");
+    }
+
+    // 2. DELETE SPECIFIC REPLY
+    if (args[0] === 'del') {
+        if (!isAdmin) return await sendWithTyping(chat, "❌ *Access Denied:* Admin privileges required.");
+        const triggerToDelete = args.slice(1).join(" ").toLowerCase().trim();
+        
+        if (global.autoResponseMap[triggerToDelete]) {
+            delete global.autoResponseMap[triggerToDelete];
+            return await sendWithTyping(chat, `✅ *Successfully Deleted:* "${triggerToDelete}"`);
+        } else {
+            return await sendWithTyping(chat, "❌ *Error:* Trigger word not found.");
         }
     }
 
-    // 3. SETTING REPLY (Supports Text, Image, Video, Audio, Voice)
-    if (args.length > 0 && isOwner && args[0] !== 'del' && args[0] !== 'delall') {
+    // 3. SETTING A NEW REPLY
+    if (args.length > 0 && args[0] !== 'del' && args[0] !== 'delall') {
+        if (!isAdmin) return await sendWithTyping(chat, "❌ *Access Denied:* Only Admins can set auto-replies.");
+        
         const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-        if (!quotedMsg) return await sock.sendMessage(chat, { text: "⚠️ Swipe/Reply to any message (Text/Media) and type `.reply`" });
+        if (!quotedMsg) {
+            return await sendWithTyping(chat, "⚠️ *How to use:*\n\n1. Reply to the message you want to trigger.\n2. Type: `.reply [Your Response]`");
+        }
 
-        // Identify the trigger (The text you swiped on)
         const trigger = (quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || "").toLowerCase().trim();
-        if (!trigger) return await sock.sendMessage(chat, { text: "❌ Swipe only on text messages to set them as triggers." });
+        const response = args.join(" ");
 
-        // Store the entire message object to avoid downloading
-        global.autoResponseMap[trigger] = {
-            message: msg.message.extendedTextMessage.contextInfo.quotedMessage,
-            type: Object.keys(quotedMsg)[0]
-        };
+        if (!trigger) return await sendWithTyping(chat, "❌ *Error:* Only text-based messages can be used as triggers.");
 
-        return await sock.sendMessage(chat, { text: `✅ *Auto-Reply Linked!*\n\n*Trigger:* ${trigger}\n*Status:* Media/Text Saved in Memory.` });
+        global.autoResponseMap[trigger] = response;
+        return await sendWithTyping(chat, `✅ *Auto-Reply Set!*\n\n*Trigger:* ${trigger}\n*Response:* ${response}`);
     }
 
-    // 4. BACKGROUND LISTENER (With Human-like Typing/Recording)
+    // 4. BACKGROUND LISTENER (Optimized for performance)
     if (!global.replyHandlerInitialized) {
         global.replyHandlerInitialized = true;
         sock.ev.on('messages.upsert', async (chatUpdate) => {
-            const m = chatUpdate.messages[0];
-            if (!m.message || m.key.fromMe) return;
+            try {
+                const m = chatUpdate.messages[0];
+                if (!m.message || m.key.fromMe) return;
+                
+                const incomingText = (m.message.conversation || m.message.extendedTextMessage?.text || "").toLowerCase().trim();
+                const targetChat = m.key.remoteJid;
 
-            const incomingText = (m.message.conversation || m.message.extendedTextMessage?.text || "").toLowerCase().trim();
-            const data = global.autoResponseMap[incomingText];
-
-            if (data) {
-                // 📝 Human-like Effects
-                const isAudio = data.type === 'audioMessage';
-                await sock.sendPresenceUpdate(isAudio ? 'recording' : 'composing', m.key.remoteJid);
-                await new Promise(resolve => setTimeout(resolve, 2000)); // 2 Seconds delay
-                await sock.sendPresenceUpdate('paused', m.key.remoteJid);
-
-                // 🚀 Send Response (Copy/Forward Method - No Download)
-                await sock.sendMessage(m.key.remoteJid, { forward: { key: m.key, message: data.message } }, { quoted: m });
+                if (global.autoResponseMap && global.autoResponseMap[incomingText]) {
+                    // Typing effect for auto-replies
+                    await sock.sendPresenceUpdate('composing', targetChat);
+                    await new Promise(resolve => setTimeout(resolve, 1000)); 
+                    await sock.sendMessage(targetChat, { 
+                        text: global.autoResponseMap[incomingText] 
+                    }, { quoted: m });
+                }
+            } catch (error) {
+                console.error("Error in Auto-Reply Listener:", error);
             }
         });
     }
 
-    // 5. HELP MENU
+    // 5. STATUS / HELP MENU
     if (args.length === 0) {
         let list = Object.keys(global.autoResponseMap);
-        let status = list.length > 0 ? `📝 *Active Triggers:* \n${list.join(", ")}` : "_No active replies._";
-        const menu = `╭━━━〔 𓆩 👺ASURA MD 𓆪 〕━━━┈⊷
+        let status = list.length > 0 ? `📝 *Active Triggers:* \n- ${list.join("\n- ")}` : "_No active replies set._";
+        
+        const menu = `
+╭━━━〔 𓆩 👺ASURA MD 𓆪 〕━━━┈⊷
 ┃
-┃ 🤖 *ADVANCED AUTO-REPLY*
+┃ 🤖 *AUTO-REPLY SYSTEM*
 ┃
-┃ ⊙ *To Set:* Reply to a msg + \`.reply\`
+┃ ⊙ *Add:* Reply to a msg + \`.reply [text]\`
 ┃ ⊙ *Delete:* \`.reply del [trigger]\`
-┃ ⊙ *Clear:* \`.reply delall\`
+┃ ⊙ *Clear All:* \`.reply delall\`
 ┃
 ┃ ━━━━━━〔 STATUS 〕━━━━━━
 ┃
 ┃ ${status}
 ┃
 ╰━━━━━━━━━━━━━━━━━┈⊷`;
-        await sock.sendMessage(chat, { text: menu });
+        await sendWithTyping(chat, menu);
     }
 };
