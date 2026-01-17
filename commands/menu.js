@@ -66,8 +66,7 @@ export default async (sock, msg, args) => {
 ┃ ⊙📓   .Help
 ┃ ⊙🤯   .Play
 ┃ ⊙📢   .Tagall
-┃ ⊙📷   .Image <name>
-┃ ⊙⚙️   .Setting 
+┃ ⊙📷   .Image <name> 
 ╚━━━⛥❖⛥━━━❥❥❥
 ┃ °☆°☆°☆°☆°☆°☆°☆°☆°
 ╚━━━━⛥❖⛥━━━❥❥❥
