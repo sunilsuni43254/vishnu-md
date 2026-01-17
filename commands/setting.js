@@ -1,4 +1,4 @@
-export default async (sock, m, args) => {
+export default async (sock, msg, args) => {
     try {
         const chat = m.key.remoteJid;
         const sender = m.key.participant || m.key.remoteJid;
