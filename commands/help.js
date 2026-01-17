@@ -66,7 +66,6 @@ export default async (sock, msg, args) => {
 ┃ ⊙🤯 .Play–built-in games.
 ┃ ⊙📢 .Tagall–Mention all group members.
 ┃ ⊙📷 .Image <name>–Search and save photos.
-┃ ⊙⚙️ .Setting–All bot features
 ╚━━━⛥❖⛥━━━❥❥❥
 ┃ °☆°☆°☆°☆°☆°☆°☆°☆°
 ╠━━━━⛥❖⛥━━━❥❥❥
