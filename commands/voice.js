@@ -1,37 +1,39 @@
-import gtts from 'google-tts-api';
+import * as googleTTS from 'google-tts-api';
 
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
-    const text = args.join(' ');
-
-    if (!text) return sock.sendMessage(chat, { text: `*ഉപയോഗിക്കേണ്ട രീതി:* .voice [ഭാഷാ കോഡ്] [വാചകം]\n\n*ഉദാഹരണം:*\n.voice ml സുഖമാണോ? (മലയാളം)\n.voice en Hello how are you? (ഇംഗ്ലീഷ്)\n.voice hi नमस्ते (ഹിന്ദി)` }, { quoted: msg });
-
-    // ഭാഷാ കോഡ് പരിശോധിക്കുന്നു (ആദ്യത്തെ 2 അക്ഷരം)
-    let lang = 'ml'; // Default Malayalam
-    let speechText = text;
-
-    if (args[0].length === 2) {
-        lang = args[0];
-        speechText = args.slice(1).join(' ');
-    }
+    
+    // ടൈപ്പ് ചെയ്ത ടെക്സ്റ്റ് എടുക്കുന്നു
+    let text = args.join(' ');
+    
+    // ടെക്സ്റ്റ് ഇല്ലെങ്കിൽ
+    if (!text) return sock.sendMessage(chat, { text: "*Example:* .voice Hello how are you?" }, { quoted: msg });
 
     try {
-        // Voice URL നിർമ്മിക്കുന്നു
-        const url = gtts.getAudioUrl(speechText, {
+        // ഇംഗ്ലീഷ് ആണോ മലയാളം ആണോ എന്ന് നോക്കുന്നു (Default: English)
+        // ആദ്യത്തെ വാക്ക് 'ml' ആണെങ്കിൽ മലയാളം, അല്ലെങ്കിൽ ഇംഗ്ലീഷ്
+        let lang = 'en'; 
+        if (text.startsWith('ml ')) {
+            lang = 'ml';
+            text = text.replace('ml ', '');
+        }
+
+        // Google TTS URL നിർമ്മിക്കുന്നു
+        const url = googleTTS.getAudioUrl(text, {
             lang: lang,
             slow: false,
             host: 'https://translate.google.com',
         });
 
-        // voice
+        // വോയ്‌സ് നോട്ടായി (PTT) അയക്കുന്നു
         await sock.sendMessage(chat, { 
             audio: { url: url }, 
-            mimetype: 'audio/ogg', 
+            mimetype: 'audio/mp4', 
             ptt: true 
         }, { quoted: msg });
 
     } catch (e) {
         console.error(e);
-        await sock.sendMessage(chat, { text: "🥲Error." }, { quoted: msg });
+        await sock.sendMessage(chat, { text: "Error in generating voice!" }, { quoted: msg });
     }
 };
