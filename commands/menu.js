@@ -87,11 +87,13 @@ export default async (sock, msg, args) => {
 ┃ ⊙🤖   .Ai <text>
 ┃ ⊙🆎️   .Font <text>
 ┃ ⊙👤   .Owner
-┃ ⊙📓   .Help
 ┃ ⊙🤯   .Play
 ┃ ⊙📢   .Tagall
 ┃ ⊙📷   .Image <name> 
 ​┃ ⊙🎤   .Voice <text>
+┃ ⊙👁   .View 
+┃ ⊙👥   .Group 
+┃ ⊙📓   .Help
 ╚━━━⛥❖⛥━━━❥❥❥
 ┃ °☆°☆°☆°☆°☆°☆°☆°☆°
 ╚━━━━⛥❖⛥━━━❥❥❥
