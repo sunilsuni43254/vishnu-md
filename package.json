@@ -19,7 +19,7 @@
     "jimp": "latest",
     "node-fetch": "latest",
     "g-i-s": "latest",   
-    "ms-edge-tts": "latest",
+    "microsoft-edge-tts": "latest",
     "wa-sticker-formatter": "latest",
     "qrcode-terminal": "latest",
     "yt-search": "latest"
