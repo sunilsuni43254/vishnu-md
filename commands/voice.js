@@ -1,4 +1,4 @@
-import { MsEdgeTTS } from "ms-edge-tts";
+import { MsEdgeTTS } from "microsoft-edge-tts";
 import fs from 'fs';
 
 export default async (sock, msg, args) => {
