@@ -1,55 +1,47 @@
 import googleIt from 'google-it';
-import fs from 'fs';
 
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
     const text = args.join(' ');
-    const thumbPath = './image/thumb.jpg'; 
 
-    if (!text) return sock.sendMessage(chat, { text: ".Search  who is Cr7" }, { quoted: msg });
+    // സെർച്ച് ചെയ്യേണ്ട കാര്യമുണ്ടോ എന്ന് നോക്കുന്നു
+    if (!text) return sock.sendMessage(chat, { text: "*.Search Who is mooki*" }, { quoted: msg });
 
     try {
-        // ഗൂഗിൾ സെർച്ച് ചെയ്യുന്നു
-        const results = await googleIt({ query: text, 'no-display': true });
-
-        if (!results || results.length === 0) {
-            return sock.sendMessage(chat, { text: "ERROR!" });
-        }
-
-        let searchResultText = `🔍 *👺 ASURA MD SEARCH RESULTS* \n\n`;
-        
-        results.forEach((res, index) => {
-            searchResultText += `*${index + 1}. ${res.title}*\n`;
-            searchResultText += `🔗 ${res.link}\n`;
-            searchResultText += `📄 ${res.snippet}\n\n`;
+       
+        const results = await googleIt({ 
+            query: text, 
+            'no-display': true,
+            limit: 5 
         });
 
-        // റിസൾട്ട് ഒരു ടെക്സ്റ്റ് ഫയൽ ആയി അയക്കുന്നു (ഡൗൺലോഡ് ഒഴിവാക്കാൻ)
-        const fileName = 'search_results.txt';
-        fs.writeFileSync(fileName, searchResultText);
+        if (!results || results.length === 0) {
+            return sock.sendMessage(chat, { text: "❌ Error" });
+        }
 
-        await sock.sendMessage(chat, {
-            document: fs.readFileSync(fileName),
-            mimetype: 'text/plain',
-            fileName: `${text}_results.txt`,
-            caption: `✅ *👺 ASURA MD* ${text}`,
+        // ടെക്സ്റ്റ് മെസ്സേജ് നിർമ്മാണം
+        let replyText = `🌐 * SEARCH RESULTS* 🌐\n\n`;
+        replyText += `*Query:* _${text}_\n`;
+        replyText += `───────────────────\n\n`;
+
+        results.forEach((res, index) => {
+            replyText += `*${index + 1}. ${res.title}*\n`;
+            replyText += `🔗 ${res.link}\n`;
+            replyText += `📖 ${res.snippet}\n\n`;
+        });
+
+        replyText += `───────────────────\n*ASURA MD SEARCH SYSTEM*`;
+
+    
+        await sock.sendMessage(chat, { 
+            text: replyText,
             contextInfo: {
-                externalAdReply: {
-                    title: "ASURA  MD",
-                    body: "Images, Videos, and Links found",
-                    thumbnail: fs.existsSync(thumbPath) ? fs.readFileSync(thumbPath) : null,
-                    mediaType: 1,
-                    renderLargerThumbnail: true,
-                    sourceUrl: "https://google.com"
-                }
+                showAdAttribution: true 
             }
         }, { quoted: msg });
 
-        // അയച്ച ശേഷം താൽക്കാലിക ഫയൽ ഡിലീറ്റ് ചെയ്യുന്നു
-        fs.unlinkSync(fileName);
-
     } catch (e) {
-        console.error("Search Error:", e);
-        await sock.sendMessage(chat, { text: "Error!" });
+        console.error("Google-It Error:", e);
+        await sock.sendMessage(chat, { text: "❌ ERROR" });
     }
 };
