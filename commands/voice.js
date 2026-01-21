@@ -6,29 +6,29 @@ export default async (sock, msg, args) => {
     const text = args.join(' ');
     const thumbPath = './media/thumb.jpg'; 
 
-    if (!text) return sock.sendMessage(chat, { text: "Please type something..." }, { quoted: msg });
+    if (!text) return sock.sendMessage(chat, { text: ".voice Please provide some text!" }, { quoted: msg });
 
     try {
-        // - (Unlimited Support) ---
-        const results = googleTTS.getAllAudioUrls(text, {
+        // 200 അക്ഷരത്തിൽ കൂടുതൽ ഉണ്ടെങ്കിൽ ആദ്യ ഭാഗം മാത്രം എടുക്കുന്നു (For Stability)
+        const safeText = text.length > 200 ? text.substring(0, 200) : text;
+
+        const url = googleTTS.getAudioUrl(safeText, {
             lang: 'en',
             slow: false,
             host: 'https://translate.google.com',
         });
 
-        const audioUrl = results[0].url;
-
         await sock.sendMessage(chat, { 
-            audio: { url: audioUrl }, 
+            audio: { url: url }, 
             mimetype: 'audio/ogg; codecs=opus', 
             ptt: true,
             contextInfo: {
                 externalAdReply: {
-                    title: "ASURA AI ENGLISH VOICE",
-                    body: "Unlimited Length Support | No Download",
+                    title: "ASURA MD AI VOICE",
+                    body: "😍",
                     thumbnail: fs.existsSync(thumbPath) ? fs.readFileSync(thumbPath) : null,
                     mediaType: 1,
-                    renderLargerThumbnail: true,
+                    renderLargerThumbnail: false,
                     showAdAttribution: true,
                     sourceUrl: "https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24"
                 }
@@ -37,6 +37,7 @@ export default async (sock, msg, args) => {
 
     } catch (e) {
         console.error("TTS Error:", e);
-        await sock.sendMessage(chat, { text: "Error: Could not generate voice." });
+        
+        await sock.sendMessage(chat, { text: "Error: Voice processing failed!" });
     }
 };
