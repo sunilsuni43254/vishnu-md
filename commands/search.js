@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // നിങ്ങളുടെ 3 കീകൾ ഇവിടെ നൽകുക
 const apiKeys = [
-    "AIzaSyBTC8HtiBgpNFAZnm_nJyH32dwiEcsVX4o",
+    "AIzaSyCsuVA1L7GaOpCPe-__LwkFCzhc_eCH9Q4",
     "AIzaSyB5Vb84o2Wrdgd2jV44dKCJa-1EgeQ6mss",
     "AIzaSyCOvyzPJ-0lrz1GResd8yWgiXy-yAuPqKU"
 ];
