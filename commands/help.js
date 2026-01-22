@@ -91,6 +91,7 @@ export default async (sock, msg, args) => {
 ​┃ ⊙🎤 .Voice <text>–Convert text to audio.
 ​┃ ⊙👁 .View–Send media that opens once
 ​┃ ⊙👥 .Group–Manage group settings
+┃ ⊙💳 .Pay—Donate
 ​┃ ⊙📓 .Help–View commands
 ╚━━━⛥❖⛥━━━❥❥❥
 ┃ °☆°☆°☆°☆°☆°☆°☆°☆°
