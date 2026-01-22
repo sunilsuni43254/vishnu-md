@@ -1,47 +1,48 @@
-import gis from 'g-i-s'; 
+import axios from 'axios';
+
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
     const query = args.join(' ');
+    const apiKey = "AIzaSyCOvyzPJ-0lrz1GResd8yWgiXy-yAuPqKU"; 
 
-    if (!query) return sock.sendMessage(chat, { text: "🔍 .Search who is Cr7" }, { quoted: msg });
+    if (!query) return sock.sendMessage(chat, { text: "🔍 Please ask something!\nExample: .Search tell me about space" }, { quoted: msg });
 
     try {
-        // റിക്ഷൻ നൽകുന്നു
-        await sock.sendMessage(chat, { react: { text: '🔍', key: msg.key } });
+        await sock.sendMessage(chat, { react: { text: "🤖", key: msg.key } });
 
-        // g-i-s സെർച്ച് ആരംഭിക്കുന്നു
-        gis(query, async (error, results) => {
-            if (error || !results || results.length === 0) {
-                return sock.sendMessage(chat, { text: "⏳Loading..." });
-            }
-
-            // ആദ്യത്തെ ചിത്രം എടുക്കുന്നു
-            const firstImage = results[0].url;
-
-            // റിസൾട്ട് മെസ്സേജ് സ്റ്റൈലിഷ് ആയി നിർമ്മിക്കുന്നു
-            let searchMsg = `🌟 *👺 ASURA MD SEARCH ENGINE* 🌟\n\n`;
-            searchMsg += `📝 *Query:* ${query}\n`;
-            searchMsg += `⊙──────────────────⊙\n\n`;
-
-            // ആദ്യ 5 റിസൾട്ടുകളുടെ വിവരങ്ങൾ ചേർക്കുന്നു
-            results.slice(0, 5).forEach((res, index) => {
-                searchMsg += `🖼️ *Result ${index + 1}*\n`;
-                searchMsg += `🔗 ${res.url.slice(0, 50)}...\n\n`;
-            });
-
-            searchMsg += `⊙───────────────⊙\n*© 👺 𝐴𝑠𝑢𝑟𝑎 𝑀𝐷 ᴍɪɴɪ ʙᴏᴛ*
-𝑠ɪᴍᴘʟᴇ ᴡᴀʙᴏᴛ ᴍᴀᴅᴇ ʙʏ 𝑎𝑟𝑢𝑛.𝑐𝑢𝑚𝑎𝑟 ヅ
-> 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24`;
-
-            // ചിത്രം Caption സഹിതം അയക്കുന്നു (No Download)
-            await sock.sendMessage(chat, { 
-                image: { url: firstImage }, 
-                caption: searchMsg 
-            }, { quoted: msg });
+        // 1. Gemini AI - Text Generation
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+        const geminiRes = await axios.post(geminiUrl, {
+            contents: [{ parts: [{ text: query }] }]
         });
+        const aiResponse = geminiRes.data.candidates[0].content.parts[0].text;
+
+        // 2. Image Source (Direct URL - No Download)
+        // ഗൂഗിൾ സെർച്ച് വഴിയുള്ള ഒരു ഡയറക്ട് ഇമേജ് ലിങ്ക് നമ്മൾ ഉപയോഗിക്കുന്നു
+        const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(query)}?width=1080&height=1080&seed=42&model=flux`;
+
+        // 3. Voice Source (Google TTS URL - No Download)
+        const voiceUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(aiResponse.slice(0, 200))}&tl=en&client=tw-ob`;
+
+        // --- മറുപടി അയക്കുന്നു ---
+
+        // A. ചിത്രവും ടെക്സ്റ്റും ഒന്നിച്ച് അയക്കുന്നു
+        await sock.sendMessage(chat, { 
+            image: { url: imageUrl }, 
+            caption: `👺 *ASURA MD RESPONSE* \n\n${aiResponse}\n\n*© 👺 ASURA MD*` 
+        }, { quoted: msg });
+
+        // B. വോയ്‌സ് മെസ്സേജ് അയക്കുന്നു (Direct Streaming)
+        await sock.sendMessage(chat, { 
+            audio: { url: voiceUrl }, 
+            mimetype: 'audio/ogg', 
+            ptt: true 
+        }, { quoted: msg });
+
+        await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
 
     } catch (e) {
-        console.error("GIS Search Error:", e);
-        await sock.sendMessage(chat, { text: "⏳Loading..." });
+        console.error(e);
+        await sock.sendMessage(chat, { text: "❌ AI System Busy!" });
     }
 };
