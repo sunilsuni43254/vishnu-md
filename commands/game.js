@@ -9,7 +9,7 @@ export default async (sock, msg, args) => {
     try {
         await sock.sendMessage(from, { react: { text: "🎮", key: msg.key } });
 
-        let resultTitle = "✨";
+        let resultTitle = "🎉";
         let resultBody = "🧨";
         let statusEmoji = "✨";
 
@@ -47,21 +47,21 @@ export default async (sock, msg, args) => {
 *┊ ☪︎⋆*
 *⊹* 🪔 *ᴡʜᴀᴛꜱᴀᴘᴘ ᴍɪɴɪ ʙᴏᴛ*
 *✧* 「 \`👺Asura MD\` 」
-*┊ ✫ ${statusEmoji} ASURA CASINO*
+*┊ ✫ ${statusEmoji} 🎮*
 *╰────────────────────❂*
 
 ┏━━━━━━━━━━━━━━━━━━━┓
-   🔱 *${resultTitle}*
+⊙🔱 *${resultTitle}*
 ┗━━━━━━━━━━━━━━━━━━━┛
 
   ${resultBody}
 
 ┏━━━━━━━━━━━━━━━━━━━┓
-   🔥 *PLAYER:* @${sender.split('@')[0]}
+⊙🔥 *PLAYER:* @${sender.split('@')[0]}
 ┗━━━━━━━━━━━━━━━━━━━┛
 
-> 📢 *Join Elite Shinobi:* https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
-> *© 2026 ASURA MD - MULTIVERSE*`;
+> 📢 *Join Now:* https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
+> *©👺 ASURA MD*`;
 
         // --- SENDING PROCESS ---
         const messageOptions = {
