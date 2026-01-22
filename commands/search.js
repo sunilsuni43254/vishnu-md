@@ -29,9 +29,9 @@ export default async (sock, msg, args) => {
                 searchMsg += `🔗 ${res.url.slice(0, 50)}...\n\n`;
             });
 
-            searchMsg += `⊙───────────────⊙\n*© 👺 𝐴𝑠𝑢𝑟𝑎 𝑀𝐷 ᴍɪɴɪ ʙᴏᴛ
+            searchMsg += `⊙───────────────⊙\n*© 👺 𝐴𝑠𝑢𝑟𝑎 𝑀𝐷 ᴍɪɴɪ ʙᴏᴛ*
 𝑠ɪᴍᴘʟᴇ ᴡᴀʙᴏᴛ ᴍᴀᴅᴇ ʙʏ 𝑎𝑟𝑢𝑛.𝑐𝑢𝑚𝑎𝑟 ヅ
-> 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24*`;
+> 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24`;
 
             // ചിത്രം Caption സഹിതം അയക്കുന്നു (No Download)
             await sock.sendMessage(chat, { 
