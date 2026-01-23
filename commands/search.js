@@ -1,62 +1,55 @@
 import axios from 'axios';
 
-// നിങ്ങളുടെ 3 കീകൾ ഇവിടെ നൽകുക
-const apiKeys = [
-    "AIzaSyCsuVA1L7GaOpCPe-__LwkFCzhc_eCH9Q4",
-    "AIzaSyB-vJrUrw9LgDOpixwFgW4RWXtzWlacjmk",
-    "AIzaSyAzyGsVTVcVX-XepWo-5sz65111pPtPMQQ"
-];
-
-let currentIdx = 0;
-
 export default async (sock, msg, args) => {
     const from = msg.key.remoteJid;
     const query = args.join(' ');
 
-    if (!query) return sock.sendMessage(from, { text: "🏮 *ASURA MD*\n\nAsk me anything!" });
-
-    // ടൈപ്പിംഗ് ഇൻഡിക്കേഷൻ നൽകുന്നു
-    await sock.sendPresenceUpdate('composing', from);
-    await sock.sendMessage(from, { react: { text: "🔮", key: msg.key } });
-
-    // Round-Robin രീതിയിൽ കീ മാറ്റുന്നു
-    const apiKey = apiKeys[currentIdx];
-    currentIdx = (currentIdx + 1) % apiKeys.length;
+    if (!query) return sock.sendMessage(from, { text: "🏮 *ASURA SEARCH*\nWhat do you want to know?" });
 
     try {
-        // ഒഫീഷ്യൽ എൻഡ്‌പോയിന്റ് കൃത്യമായി നൽകുന്നു
-        const response = await axios({
-            method: 'post',
-            url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-            data: {
-                contents: [{
-                    parts: [{ text: query }]
-                }]
-            },
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 50000 // 50 സെക്കൻഡ് കഴിഞ്ഞാൽ കണക്ഷൻ കട്ട് ചെയ്യും (Server Busy ഒഴിവാക്കാൻ)
-        });
+        await sock.sendMessage(from, { react: { text: "🔍", key: msg.key } });
 
-        const aiText = response.data.candidates[0].content.parts[0].text;
+        const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=1`;
+        const response = await axios.get(url);
+        const data = response.data;
 
-        const design = `*👺 ASURA MD  RESPONSE*\n*⊙────────────────────❂*\n\n${aiText}\n\n*⊙──────────────────────*\n*© ASURA-MD INTELLIGENCE *`;
+        // DuckDuckGo മറുപടി നൽകുന്നത് 'AbstractText' എന്നതിലാണ്
+        if (data.AbstractText) {
+            const searchMsg = `
+╭━━〔 🥰 *ASURA MD SEARCH* 〕━━┈⊷
+┃
+┃ 🔎 *Query:* ${data.Heading}
+┃
+┣━━━━━━━━━━━━━━┈⊷
+┃
+${data.AbstractText}
+┃
+┣━━━━━━━━━━━━━━┈⊷
+┃ 📚 *Source:* ${data.AbstractSource || 'Asura-MD}
+╰━━━━━━━━━━━━━━━┈⊷
+> *© 2026 ASURA MD*`;
 
-        await sock.sendMessage(from, { text: design }, { quoted: msg });
-        await sock.sendMessage(from, { react: { text: "✅", key: msg.key } });
+            // ഇമേജ് ഉണ്ടെങ്കിൽ അത് ഉൾപ്പെടുത്തുന്നു
+            if (data.Image) {
+                await sock.sendMessage(from, { 
+                    image: { url: `https://duckduckgo.com${data.Image}` }, 
+                    caption: searchMsg 
+                }, { quoted: msg });
+            } else {
+                await sock.sendMessage(from, { text: searchMsg }, { quoted: msg });
+            }
+            
+            await sock.sendMessage(from, { react: { text: "✅", key: msg.key } });
 
-    } catch (error) {
-        console.error('Gemini Error Details:', error.response ? error.response.data : error.message);
-        
-        let errorMsg = "❌ *Server Busy:* Connection timed out!";
-        
-        if (error.response) {
-            const status = error.response.status;
-            if (status === 400) errorMsg = "❌ *Bad Request:* Code logic error.";
-            if (status === 403) errorMsg = "❌ *Invalid Key:* Your API Key is wrong.";
-            if (status === 429) errorMsg = "❌ *Limit Reached:* Too many requests.";
+        } else {
+            // മറുപടി ഇല്ലെങ്കിൽ
+            await sock.sendMessage(from, { 
+                text: "❌ *No direct info found!* Try searching for famous people, places, or things." 
+            }, { quoted: msg });
         }
 
-        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
-        await sock.sendMessage(from, { react: { text: "⚠️", key: msg.key } });
+    } catch (error) {
+        console.error('DDG Error:', error);
+        await sock.sendMessage(from, { text: "⚠️ Connection Error! Try again later." });
     }
 };
