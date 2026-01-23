@@ -32,8 +32,13 @@ export default {
             // Google Maps Search Link
             const mapLink = `https://www.google.com/maps/search/${encodeURIComponent(phoneNumber.country)}`;
 
-            const report = `*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
-*✧* 「 👺Asura MD AI 」
+            const report = `
+*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
+*┊ ┊ ┊ ┊ ┊*
+*┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
+*┊ ☪︎⋆*
+*⊹* 🪔 *Mobile Number Tracker*
+*✧* 「 👺Asura MD 」
 *╰────────────❂*
 ╭━━━〔 👹 *ASURA GLOBAL INTELLIGENCE* 〕━━━┈⊷
 ┃
