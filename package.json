@@ -21,6 +21,7 @@
     "g-i-s": "latest",
     "google-tts-api": "latest",
     "wa-sticker-formatter": "latest",
+    "libphonenumber-js": "latest", 
     "qrcode-terminal": "latest",
     "yt-search": "latest"
   }
