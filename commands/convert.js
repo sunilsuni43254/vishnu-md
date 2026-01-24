@@ -1,81 +1,93 @@
 import { downloadContentFromMessage } from '@whiskeysockets/baileys';
+import { Sticker, StickerTypes } from 'wa-sticker-formatter'; 
 
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
-    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage || null;
-    
-    // Check if there is a replied message
-    if (!quoted) {
-        return sock.sendMessage(chat, { text: "❌ Please reply to a media message (Image, Video, Audio, or Sticker) to convert it." }, { quoted: msg });
-    }
+    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage || msg.message?.viewOnceMessageV2?.message || null;
+    const cmd = args[0]?.toLowerCase();
 
-    // Identify the media type and mimetype
-    const mime = Object.values(quoted)[0]?.mimetype || "";
-    const messageType = Object.keys(quoted)[0].replace('Message', '');
+    // കമാൻഡ് ലിസ്റ്റ് (സഹായത്തിനായി)
+    const helpText = `*👺 ASURA MD CONVERTER 👺*
 
-    if (!mime) {
-        return sock.sendMessage(chat, { text: "❌ No media found in the replied message." }, { quoted: msg });
-    }
+*COMMANDS:*
+• *.convert sticker* - Image/Video to Sticker
+• *.convert image* - Sticker to Image
+• *.convert video* - GIF to Video
+• *.convert gif* - Video to GIF
+• *.convert audio* - Video to Audio (MP3)
+• *.convert voice* - Audio to Voice Note (PTT)
+• *.convert pdf* - Image/Doc to PDF
+• *.convert text* - Image to Text (OCR)
+• *.convert emoji* - Sticker to Emoji (PNG)`;
+
+    if (!quoted && !args[1]) return sock.sendMessage(chat, { text: helpText }, { quoted: msg });
 
     try {
-        await sock.sendMessage(chat, { text: "🔄 *ASURA MD: Processing Media...*" }, { quoted: msg });
+        const type = Object.keys(quoted || {})[0];
+        const mime = quoted?.[type]?.mimetype || "";
+        let buffer;
 
-        // Step 1: Download media to buffer (No file saving/download to disk)
-        const stream = await downloadContentFromMessage(quoted[Object.keys(quoted)[0]], messageType.toLowerCase() === 'image' ? 'image' : messageType.toLowerCase() === 'video' ? 'video' : messageType.toLowerCase() === 'audio' ? 'audio' : 'document');
-        
-        let buffer = Buffer.from([]);
-        for await (const chunk of stream) {
-            buffer = Buffer.concat([buffer, chunk]);
-        }
-
-        // Step 2: Conversion Logic based on Command Arguments
-        
-        // 1. IMAGE -> STICKER
-        if (/image/.test(mime)) {
-            return await sock.sendMessage(chat, { sticker: buffer }, { quoted: msg });
-        }
-
-        // 2. STICKER -> IMAGE
-        if (/sticker/.test(mime)) {
-            return await sock.sendMessage(chat, { image: buffer, caption: "✅ *Converted by Asura MD*" }, { quoted: msg });
-        }
-
-        // 3. VIDEO -> AUDIO / GIF / VOICE
-        if (/video/.test(mime)) {
-            if (args[0] === 'gif') {
-                return await sock.sendMessage(chat, { video: buffer, gifPlayback: true, caption: "✅ *GIF Converted*" }, { quoted: msg });
+        // മീഡിയ ഡൗൺലോഡ് പ്രോസസ്സ് (ടെക്സ്റ്റ് കൺവേർഷൻ അല്ലാത്തവയ്ക്ക്)
+        if (quoted && cmd !== 'text') {
+            const stream = await downloadContentFromMessage(quoted[type], type.replace('Message', '').toLowerCase());
+            buffer = Buffer.from([]);
+            for await (const chunk of stream) {
+                buffer = Buffer.concat([buffer, chunk]);
             }
-            const isVoice = args[0] === 'voice';
-            return await sock.sendMessage(chat, { 
-                audio: buffer, 
-                mimetype: 'audio/ogg', 
-                ptt: isVoice 
-            }, { quoted: msg });
         }
 
-        // 4. AUDIO -> VOICE (PTT)
-        if (/audio/.test(mime)) {
-            return await sock.sendMessage(chat, { 
-                audio: buffer, 
-                mimetype: 'audio/ogg', 
-                ptt: true 
-            }, { quoted: msg });
-        }
+        const send = async (data) => sock.sendMessage(chat, data, { quoted: msg });
 
-        // 5. ANY MEDIA -> DOCUMENT (PDF/Doc)
-        if (args[0] === 'doc' || args[0] === 'pdf') {
-            return await sock.sendMessage(chat, { 
-                document: buffer, 
-                mimetype: args[0] === 'pdf' ? 'application/pdf' : mime, 
-                fileName: `Asura_Intel_${Date.now()}.${args[0]}`
-            }, { quoted: msg });
-        }
+        switch (cmd) {
+            case 'sticker':
+                if (!/image|video/.test(mime)) return send({ text: "❌ send photo!" });
+                const sBuffer = new Sticker(buffer, { pack: 'Asura MD', author: 'Arun', type: StickerTypes.FULL });
+                return await send({ sticker: await sBuffer.toBuffer() });
 
-        // If no specific arg, but valid media
-        return sock.sendMessage(chat, { text: "⚠️ Please specify format: \nExample: .convert gif, .convert voice, .convert pdf" }, { quoted: msg });
+            case 'image':
+                if (!/sticker/.test(mime)) return send({ text: "❌ Reply!" });
+                return await send({ image: buffer, caption: "✅ *Converted to Image*" });
+
+            case 'pdf':
+                return await send({ 
+                    document: buffer, 
+                    mimetype: 'application/pdf', 
+                    fileName: `Asura_MD_${Date.now()}.pdf` 
+                });
+
+            case 'video':
+                if (!/video|gif/.test(mime)) return send({ text: "❌ GIF-ന് റിപ്ലൈ നൽകുക!" });
+                return await send({ video: buffer, caption: "✅ *Converted to Video*" });
+
+            case 'gif':
+                if (!/video/.test(mime)) return send({ text: "❌ വീഡിയോയ്ക്ക് റിപ്ലൈ നൽകുക!" });
+                return await send({ video: buffer, gifPlayback: true, caption: "✅ *Converted to GIF*" });
+
+            case 'audio':
+                if (!/video|audio/.test(mime)) return send({ text: "❌ വീഡിയോ/ഓഡിയോ നൽകുക!" });
+                return await send({ audio: buffer, mimetype: 'audio/mp4' });
+
+            case 'voice':
+                if (!/audio|video/.test(mime)) return send({ text: "❌ ഓഡിയോ/വീഡിയോ നൽകുക!" });
+                return await send({ audio: buffer, mimetype: 'audio/ogg; codecs=opus', ptt: true });
+
+            case 'text':
+                return send({ text: "🔍 *OCR Feature:* ഈ ഫീച്ചറിന് Tesseract engine ആവശ്യമാണ്. തൽക്കാലം മീഡിയ വിവരങ്ങൾ ഇതാ: \nType: " + type });
+
+            case 'emoji':
+                if (!/sticker/.test(mime)) return send({ text: "❌ സ്റ്റിക്കറിന് റിപ്ലൈ നൽകുക!" });
+                return await send({ 
+                    document: buffer, 
+                    mimetype: 'image/png', 
+                    fileName: `emoji_${Date.now()}.png` 
+                });
+
+            default:
+                return send({ text: helpText });
+        }
 
     } catch (e) {
-        console.error("Conversion Error:", e);
-        await sock.sendMessage(chat, { text: "❌ Error: Failed to process media. Make sure it's a valid file." }, { quoted: msg });
+        console.error(e);
+        return send({ text: "❌ *Error:* പ്രോസസ്സിംഗ് പരാജയപ്പെട്ടു!" });
     }
 };
