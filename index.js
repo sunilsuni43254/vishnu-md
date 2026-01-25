@@ -4,6 +4,7 @@ import makeWASocket, {
     fetchLatestBaileysVersion, 
     makeCacheableSignalKeyStore 
 } from "@whiskeysockets/baileys";
+import { handleEvents } from './handlers.js';
 import pino from "pino";
 import fs from "fs";
 import path from "path";
