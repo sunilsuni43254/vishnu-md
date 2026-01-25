@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const DB_PATH = './media/asura_db.json';
 const getDB = () => fs.existsSync(DB_PATH) ? JSON.parse(fs.readFileSync(DB_PATH)) : {};
