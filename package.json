@@ -1,6 +1,6 @@
 {
   "name": "Asura-MD",
-  "version": "2.0",
+  "version": "v2.0",
   "description": "A Simple Whatsapp Bot by arun•°Cumar",
   "main": "index.js",
   "type": "module",
@@ -20,6 +20,7 @@
     "node-fetch": "latest",
     "g-i-s": "latest",
     "google-tts-api": "latest",
+    "@google/generative-ai": "latest",
     "wa-sticker-formatter": "latest",
     "qrcode-terminal": "latest",
     "yt-search": "latest"
