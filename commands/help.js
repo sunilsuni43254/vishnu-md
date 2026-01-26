@@ -63,7 +63,8 @@ export default async (sock, msg, args) => {
         const imagePath = './media/asura.jpg'; 
         const songPath = './media/song.opus'; 
 
-        const helpText = `*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
+        const helpText = `
+*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
@@ -92,6 +93,7 @@ export default async (sock, msg, args) => {
 ​┃ ⊙👁 .View–Send media that opens once
 ​┃ ⊙👥 .Group–Manage group settings
 ┃ ⊙💳 .Pay—Donate
+┃ ⊙📳 .Mode-Public or Private mode 
 ​┃ ⊙📓 .Help–View commands
 ╚━━━⛥❖⛥━━━❥❥❥
 ┃ °☆°☆°☆°☆°☆°☆°☆°☆°
