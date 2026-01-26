@@ -7,12 +7,12 @@ const saveDB = (data) => fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2)
 
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
-    const command = args[0]?.toLowerCase();
+    const isGroup = chat.endsWith('@g.us');
     const imagePath = './media/thumb.jpg';
     const songPath = './media/song.opus';
 
-    // --- 1. Help Menu Design (Updated with all commands) ---
-    if (!args[0]) {
+    // --- 1. Help Menu Design ---
+    if (!args[0] || args[0].toLowerCase() === 'help') {
         const helpText = `*👺⃝⃘̉̉̉━━━━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
@@ -23,7 +23,7 @@ export default async (sock, msg, args) => {
 ╔━━━━━━━━━━━━❥❥❥
 ┃ 🛡️ *👺ULTIMATE GROUP MASTER*
 ┃
-┃🔹🆔️ .group id (Get Chat ID)
+┃🔹🆔️ .group id
 ┃🔹➕ .group add [number]
 ┃🔹🦶 .group kick [tag/reply]
 ┃🔹🤴 .group promot/demote [tag]
@@ -42,37 +42,46 @@ export default async (sock, msg, args) => {
 ┃🔹🌏 .group antiforeign on/off
 ┃🔹📞 .group anticall on/off
 ┃🔹🤖 .group chatbot on/off
-┃💡 .Help
+┃
+┃💡 *Note:* DM-ൽ JID വെച്ചും ഉപയോഗിക്കാം
 ╚━━━━━━━⛥❖⛥━━━━━━❥❥❥`;
 
         if (fs.existsSync(songPath)) {
             await sock.sendMessage(chat, { audio: { url: songPath }, mimetype: "audio/ogg; codecs=opus", ptt: true });
         }
-        return sock.sendMessage(chat, { text: helpText });
+        return sock.sendMessage(chat, { text: helpText }, { quoted: msg });
     }
 
     try {
-        // --- 2. Target Logic (DM/Group Remote Control) ---
+        // --- 2. Target & Action Logic (Fixed) ---
         let targetGroup = chat;
-        let actionIdx = 0;
+        let action;
+        let valueStartIdx;
 
-        if (args[0] && args[0].includes('@g.us')) {
+        // ചെക്ക് ചെയ്യുന്നു: ആദ്യത്തെ വാക്ക് JID ആണോ? (.group 1203xxx@g.us add)
+        if (args[0].includes('@g.us')) {
             targetGroup = args[0];
-            actionIdx = 1;
+            action = args[1]?.toLowerCase();
+            valueStartIdx = 2;
+        } else {
+            targetGroup = chat;
+            action = args[0]?.toLowerCase();
+            valueStartIdx = 1;
         }
 
-        const action = args[actionIdx]?.toLowerCase();
-        const value = args.slice(actionIdx + 1).join(' ');
+        if (!action) return;
+
+        const value = args.slice(valueStartIdx).join(' ');
         const db = getDB();
 
-        // User target detection
+        // User target detection (Reply, Tag, or Number)
         const quoted = msg.message?.extendedTextMessage?.contextInfo;
-        let user = quoted?.participant || (quoted?.mentionedJid?.[0]) || (args[actionIdx + 1] ? args[actionIdx + 1].replace(/[^0-9]/g, '') + '@s.whatsapp.net' : null);
+        let user = quoted?.participant || quoted?.mentionedJid?.[0] || (args[valueStartIdx] ? args[valueStartIdx].replace(/[^0-9]/g, '') + '@s.whatsapp.net' : null);
 
         // --- 3. Command Switch System ---
         switch (action) {
             case 'id':
-                return sock.sendMessage(chat, { text: `📍 *Chat ID:* ${chat}` }, { quoted: msg });
+                return sock.sendMessage(chat, { text: `📍 *Chat ID:* ${targetGroup}` }, { quoted: msg });
 
             case 'welcome':
             case 'antilink':
@@ -83,24 +92,26 @@ export default async (sock, msg, args) => {
                 if (!db[targetGroup]) db[targetGroup] = {};
                 db[targetGroup][action] = (value === 'on');
                 saveDB(db);
-                return sock.sendMessage(chat, { text: `✅ *${action.toUpperCase()}* is now *${value.toUpperCase()}*` });
+                return sock.sendMessage(chat, { text: `✅ *${action.toUpperCase()}* is now *${value.toUpperCase()}* for ${targetGroup}` });
 
             case 'anticall':
                 if (!db['global']) db['global'] = {};
                 db['global'].anticall = (value === 'on');
                 saveDB(db);
-                return sock.sendMessage(chat, { text: `🛡️ *ANTI-CALL* is now *${value.toUpperCase()}* (Global)` });
+                return sock.sendMessage(chat, { text: `🛡️ *ANTI-CALL* is now *${value.toUpperCase()}* (Global Setting)` });
 
             case 'tagall':
                 const metadata = await sock.groupMetadata(targetGroup);
                 const participants = metadata.participants.map(p => p.id);
-                return sock.sendMessage(targetGroup, { text: `📢 *TAGALL:* ${value || 'Attention!'}`, mentions: participants });
+                return sock.sendMessage(targetGroup, { text: `📢 *${value || 'Attention everyone!'}*`, mentions: participants });
 
             case 'add':
+                if (!user) return sock.sendMessage(chat, { text: "❌ Please provide a number or reply to a user." });
                 await sock.groupParticipantsUpdate(targetGroup, [user], "add");
                 break;
 
             case 'kick':
+                if (!user) return sock.sendMessage(chat, { text: "❌ Please tag or reply to a user." });
                 await sock.groupParticipantsUpdate(targetGroup, [user], "remove");
                 break;
 
@@ -121,38 +132,45 @@ export default async (sock, msg, args) => {
                 break;
 
             case 'delete':
-                if (quoted) await sock.sendMessage(targetGroup, { delete: { remoteJid: targetGroup, fromMe: false, id: quoted.stanzaId, participant: quoted.participant } });
+                if (!quoted) return sock.sendMessage(chat, { text: "❌ Please reply to the message you want to delete." });
+                await sock.sendMessage(targetGroup, { delete: { remoteJid: targetGroup, fromMe: false, id: quoted.stanzaId, participant: quoted.participant } });
                 break;
 
             case 'name':
+                if (!value) return sock.sendMessage(chat, { text: "❌ Please provide a name." });
                 await sock.groupUpdateSubject(targetGroup, value);
                 break;
 
             case 'bio':
+                if (!value) return sock.sendMessage(chat, { text: "❌ Please provide a bio." });
                 await sock.groupUpdateDescription(targetGroup, value);
                 break;
 
             case 'schedule':
-                const [time, ...msgArr] = value.split(' ');
-                sock.sendMessage(chat, { text: `🕒 Scheduled in ${time} min.` });
+                const schedTime = parseInt(args[valueStartIdx]);
+                const schedMsg = args.slice(valueStartIdx + 1).join(' ');
+                if (isNaN(schedTime) || !schedMsg) return sock.sendMessage(chat, { text: "❌ Format: .group schedule [mins] [message]" });
+                sock.sendMessage(chat, { text: `🕒 Message scheduled in ${schedTime} minute(s).` });
                 setTimeout(() => {
-                    sock.sendMessage(targetGroup, { text: `🕒 *SCHEDULED:* ${msgArr.join(' ')}` });
-                }, parseInt(time) * 60000);
+                    sock.sendMessage(targetGroup, { text: schedMsg });
+                }, schedTime * 60000);
                 break;
 
             case 'join':
-                const code = args[actionIdx + 1].split('.com/')[1];
+                const link = args[valueStartIdx];
+                if (!link || !link.includes('chat.whatsapp.com/')) return sock.sendMessage(chat, { text: "❌ Invalid link." });
+                const code = link.split('.com/')[1];
                 await sock.groupAcceptInvite(code);
-                return sock.sendMessage(chat, { text: "✅ Joined!" });
+                return sock.sendMessage(chat, { text: "✅ Joined successfully!" });
 
             default:
-                return sock.sendMessage(chat, { text: "❌ Invalid action." });
+                return sock.sendMessage(chat, { text: "❌ Unknown command. Use *.group help* to see all commands." });
         }
 
         await sock.sendMessage(chat, { text: `✅ *Executed:* ${action.toUpperCase()}` });
 
     } catch (e) {
         console.error(e);
-        await sock.sendMessage(chat, { text: "❌ *Failed:* Permisson Error or Invalid JID." });
+        await sock.sendMessage(chat, { text: "❌ *Failed:* Check if I am an Admin or if the JID is correct." });
     }
 };
