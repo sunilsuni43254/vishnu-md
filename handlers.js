@@ -16,10 +16,7 @@ export const handleEvents = async (sock) => {
         const isGroup = chat.endsWith('@g.us');
         const db = getDB();
         
-        // Global and Group settings
         const settings = db[chat] || {};
-        const globalSettings = db['global'] || {};
-
         const body = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
 
         // --- 1. ANTILINK ---
@@ -32,31 +29,27 @@ export const handleEvents = async (sock) => {
             }
         }
 
-        // --- 2. ANTI-SPAM (Simple) ---
+        // --- 2. ANTI-SPAM ---
         if (isGroup && settings.antispam && body.length > 500) {
              await sock.sendMessage(chat, { delete: msg.key });
              await sock.sendMessage(chat, { text: "🚫 *Spam Detected and Removed!*" });
         }
 
-        // --- 3. CHATBOT (Gemini AI Integration) ---
-if (settings.chatbot && !body.startsWith('.') && !msg.key.fromMe) {
-    try {
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-pro",
-            systemInstruction: "You are Asura MD AI, a powerful WhatsApp assistant. Be smart and helpful. User name is " + (msg.pushName || "User")
-        });
-
-        const result = await model.generateContent(body);
-        const response = await result.response;
-        const aiResponse = response.text();
-
-        await sock.sendMessage(chat, { 
-            text: `*👺 ASURA AI*\n\n${aiResponse}` 
-        }, { quoted: msg });
-    } catch (err) {
-        console.error("AI Chatbot Error:", err);
-    }
-}
+        // --- 3. CHATBOT ---
+        if (settings.chatbot && !body.startsWith('.') && !msg.key.fromMe) {
+            try {
+                const model = genAI.getGenerativeModel({ 
+                    model: "gemini-pro",
+                    systemInstruction: "You are Asura MD AI, a powerful WhatsApp assistant. Be smart and helpful. User name is " + (msg.pushName || "User")
+                });
+                const result = await model.generateContent(body);
+                const response = await result.response;
+                await sock.sendMessage(chat, { text: `*👺 ASURA AI*\n\n${response.text()}` }, { quoted: msg });
+            } catch (err) {
+                console.error("AI Chatbot Error:", err);
+            }
+        }
+    }); 
 
     // --- 4. WELCOME & ANTI-FOREIGN NUMBER ---
     sock.ev.on('group-participants.update', async (update) => {
@@ -66,20 +59,13 @@ if (settings.chatbot && !body.startsWith('.') && !msg.key.fromMe) {
 
         if (action === 'add') {
             for (let num of participants) {
-                // ANTI-FOREIGN (Non +91 check)
                 if (settings.antiforeign && !num.startsWith('91')) {
-                    await sock.sendMessage(id, { text: "🚫 *Foreign numbers are not allowed!* Kick target..." });
                     await sock.groupParticipantsUpdate(id, [num], "remove");
                     continue;
                 }
-
-                // WELCOME
                 if (settings.welcome) {
                     const metadata = await sock.groupMetadata(id);
-                    await sock.sendMessage(id, { 
-                        text: `Hello @${num.split('@')[0]} 👋\nWelcome to *${metadata.subject}*! 👺`, 
-                        mentions: [num] 
-                    });
+                    await sock.sendMessage(id, { text: `Hello @${num.split('@')[0]} 👋\nWelcome to *${metadata.subject}*! 👺`, mentions: [num] });
                 }
             }
         }
@@ -90,18 +76,16 @@ if (settings.chatbot && !body.startsWith('.') && !msg.key.fromMe) {
         const db = getDB();
         if (db['global']?.anticall) {
             const caller = call[0].from;
-            await sock.sendMessage(caller, { text: "⚠️ *Calls are blocked by Asura MD.* You will be blocked." });
             await sock.updateBlockStatus(caller, "block");
         }
     });
 
-    // --- 6. ANTIDELETE LOGIC ---
-    // (Note: Requires a message store to show deleted content, 
-    // here we just log or notify for simplicity)
+    // --- 6. ANTIDELETE ---
     sock.ev.on('messages.delete', async (item) => {
         const db = getDB();
         if (db[item.remoteJid]?.antidelete) {
             await sock.sendMessage(item.remoteJid, { text: "🕵️‍♂️ *Asura MD detected a deleted message!*" });
         }
     });
-};
+
+}; 
