@@ -65,7 +65,7 @@ export const handleEvents = async (sock) => {
             // --- CHATBOT ---
             if (settings.chatbot && !body.startsWith('.') && !msg.key.fromMe) {
                 try {
-                    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+                    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
                     const result = await model.generateContent(body);
                     const response = await result.response;
                     await sock.sendMessage(chat, { text: `*👺 ASURA AI*\n\n${response.text()}` }, { quoted: msg });
