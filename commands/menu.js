@@ -103,10 +103,9 @@ export default async (sock, msg, args) => {
 ┃ ⊙📢   .Tagall
 ┃ ⊙📷   .Image <name> 
 ​┃ ⊙🎤   .Voice <text>
-┃ ⊙👁   .View 
-┃ ⊙👥   .Group 
+┃ ⊙👁   .View  
 ┃ ⊙💳   .Pay
-┃ ⊙📳   .Mode 
+┃ ⊙📳   .Mode private/public 
 ┃ ⊙📓   .Help
 ╚━━━⛥❖⛥━━━❥❥❥
 ┃ °☆°☆°☆°☆°☆°☆°☆°☆°
