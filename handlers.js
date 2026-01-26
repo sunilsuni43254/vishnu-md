@@ -23,16 +23,25 @@ export const handleEvents = async (sock) => {
             const settings = db[chat] || {};
             const body = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
 
-            // --- ANTILINK ---
-            if (settings.antilink && body.includes('chat.whatsapp.com')) {
-                const metadata = await sock.groupMetadata(chat);
-                const isAdmin = metadata.participants.find(p => p.id === sender)?.admin;
-                if (!isAdmin) {
-                    await sock.sendMessage(chat, { delete: msg.key });
-                    await sock.groupParticipantsUpdate(chat, [sender], "remove");
-                    return;
-                }
-            }
+            // --- 1. ALL LINK DELETE 
+            const linkPattern = /https?:\/\/\S+|www\.\S+|\b\w+\.(?:com|in|net|org|gov|edu|me|xyz|site|co|biz|info|io|ml|tk)\b/gi;
+
+            if (settings.antilink && linkPattern.test(body)) {
+            const metadata = await sock.groupMetadata(chat);
+            const isAdmin = metadata.participants.find(p => p.id === sender)?.admin;
+
+            if (!isAdmin) {
+            // delete message
+                await sock.sendMessage(chat, { delete: msg.key });
+        
+            // Remove from the group
+                await sock.groupParticipantsUpdate(chat, [sender], "remove");
+        
+           // Alert message
+                await sock.sendMessage(chat, { text: "🚫 *Links are strictly prohibited!* User has been removed." });
+                return;
+              }
+          }
 
             // --- ANTI-SPAM (തുടർച്ചയായി 3 ഒരേ മെസ്സേജ് വന്നാൽ) ---
             if (settings.antispam) {
