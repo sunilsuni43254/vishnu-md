@@ -5,8 +5,11 @@ const DB_PATH = './media/asura_db.json';
 const getDB = () => fs.existsSync(DB_PATH) ? JSON.parse(fs.readFileSync(DB_PATH)) : {};
 const genAI = new GoogleGenerativeAI("AIzaSyAjdhkNjek2l9VCm6N9upQ5L1WuZvb-CC4");
 
+const messageCount = {};
+
 export const handleEvents = async (sock) => {
 
+    // --- 1. MESSAGE EVENTS ---
     sock.ev.on('messages.upsert', async (chatUpdate) => {
         const msg = chatUpdate.messages[0];
         if (!msg.message || msg.key.fromMe) return;
@@ -15,11 +18,10 @@ export const handleEvents = async (sock) => {
         const sender = msg.key.participant || msg.key.remoteJid;
         const isGroup = chat.endsWith('@g.us');
         const db = getDB();
-        
         const settings = db[chat] || {};
         const body = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
 
-        // --- 1. ANTILINK ---
+        // ANTILINK
         if (isGroup && settings.antilink && body.includes('chat.whatsapp.com')) {
             const metadata = await sock.groupMetadata(chat);
             const isAdmin = metadata.participants.find(p => p.id === sender)?.admin;
@@ -29,29 +31,49 @@ export const handleEvents = async (sock) => {
             }
         }
 
-        // --- 2. ANTI-SPAM ---
-        if (isGroup && settings.antispam && body.length > 500) {
-             await sock.sendMessage(chat, { delete: msg.key });
-             await sock.sendMessage(chat, { text: "🚫 *Spam Detected and Removed!*" });
+        // ANTI-SPAM (3 Repetitions)
+        if (isGroup && settings.antispam) {
+            if (!messageCount[sender]) messageCount[sender] = { count: 1, lastMsg: body };
+            if (messageCount[sender].lastMsg === body) messageCount[sender].count++;
+            else { messageCount[sender].count = 1; messageCount[sender].lastMsg = body; }
+
+            if (messageCount[sender].count > 3) {
+                await sock.sendMessage(chat, { delete: msg.key });
+                return;
+            }
         }
 
-        // --- 3. CHATBOT ---
+        // ANTIDELETE (Big Text - 10 Lines)
+        if (isGroup && settings.antidelete && body.split('\n').length > 10) {
+            await sock.sendMessage(chat, { delete: msg.key });
+            await sock.sendMessage(chat, { text: "🚫 *Big Text Removed!*" });
+        }
+
+        // CHATBOT
         if (settings.chatbot && !body.startsWith('.') && !msg.key.fromMe) {
             try {
-                const model = genAI.getGenerativeModel({ 
-                    model: "gemini-pro",
-                    systemInstruction: "You are Asura MD AI, a powerful WhatsApp assistant. Be smart and helpful. User name is " + (msg.pushName || "User")
-                });
+                const model = genAI.getGenerativeModel({ model: "gemini-pro" });
                 const result = await model.generateContent(body);
                 const response = await result.response;
                 await sock.sendMessage(chat, { text: `*👺 ASURA AI*\n\n${response.text()}` }, { quoted: msg });
-            } catch (err) {
-                console.error("AI Chatbot Error:", err);
+            } catch (err) { console.error(err); }
+        }
+
+        // --- SPECIAL: ANTIFOREIGN SCAN ON COMMAND ---
+        if (isGroup && body === '.group antiforeign on') {
+            const metadata = await sock.groupMetadata(chat);
+            const foreignNumbers = metadata.participants.filter(p => !p.id.startsWith('91') && !p.admin).map(p => p.id);
+            
+            if (foreignNumbers.length > 0) {
+                await sock.sendMessage(chat, { text: `🕵️‍♂️ *Scanning Group...* Found ${foreignNumbers.length} foreign numbers. Removing them...` });
+                for (let jid of foreignNumbers) {
+                    await sock.groupParticipantsUpdate(chat, [jid], "remove");
+                }
             }
         }
-    }); 
+    });
 
-    // --- 4. WELCOME & ANTI-FOREIGN NUMBER ---
+    // --- 2. PARTICIPANT UPDATES (New Members) ---
     sock.ev.on('group-participants.update', async (update) => {
         const { id, participants, action } = update;
         const db = getDB();
@@ -59,33 +81,28 @@ export const handleEvents = async (sock) => {
 
         if (action === 'add') {
             for (let num of participants) {
+                
                 if (settings.antiforeign && !num.startsWith('91')) {
                     await sock.groupParticipantsUpdate(id, [num], "remove");
                     continue;
                 }
+                // welcome message 
                 if (settings.welcome) {
                     const metadata = await sock.groupMetadata(id);
-                    await sock.sendMessage(id, { text: `Hello @${num.split('@')[0]} 👋\nWelcome to *${metadata.subject}*! 👺`, mentions: [num] });
+                    await sock.sendMessage(id, { 
+                        text: `👋🏻 Hey @${num.split('@')[0]} Welcome to *${metadata.subject}* Group 🥰🥰`, 
+                        mentions: [num] 
+                    });
                 }
             }
         }
     });
 
-    // --- 5. ANTI-CALL ---
+    // --- 3. ANTI-CALL ---
     sock.ev.on('call', async (call) => {
         const db = getDB();
         if (db['global']?.anticall) {
-            const caller = call[0].from;
-            await sock.updateBlockStatus(caller, "block");
+            await sock.updateBlockStatus(call[0].from, "block");
         }
     });
-
-    // --- 6. ANTIDELETE ---
-    sock.ev.on('messages.delete', async (item) => {
-        const db = getDB();
-        if (db[item.remoteJid]?.antidelete) {
-            await sock.sendMessage(item.remoteJid, { text: "🕵️‍♂️ *Asura MD detected a deleted message!*" });
-        }
-    });
-
-}; 
+};
