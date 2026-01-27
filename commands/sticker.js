@@ -4,81 +4,64 @@ import fs from "fs";
 
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
-    const imagePath = './media/thumb.jpg';
-    const songPath = './media/song.opus';
-
-    // മെസ്സേജ് ഒബ്ജക്റ്റ് കണ്ടെത്തുന്നു
-    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    const message = msg.message?.imageMessage || msg.message?.videoMessage || 
-                    quoted?.imageMessage || quoted?.videoMessage || 
-                    msg.message?.viewOnceMessageV2?.message?.imageMessage || 
-                    msg.message?.viewOnceMessageV2?.message?.videoMessage;
 
     try {
-        if (!message) {
-            const helpMsg = `*👺⃝⃘̉̉━━━━━━━━━━━◆◆◆*
-*┊ ┊ ┊ ┊ ┊*
-*┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
-*┊ ☪︎⋆*
-*⊹* 🪔 *ᴡʜᴀᴛꜱᴀᴘᴘ ᴍɪɴɪ ʙᴏᴛ*
-*✧* 「 👺Asura MD 」
-*╰─────────────────❂*
-╔━━━━━━━━━━━━━❥❥❥
-┃ *⊙🖼 Reply to Image/Gif/Video*
-┃ *⊙🎨 Command: .sticker*
-╠━━━━━━━━━━━━━❥❥❥
-┃ *👑Creator:-* arun•°Cumar
-╚━━━━━━━⛥❖⛥━━━━━━❥❥❥
-> 📢 Join: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24`;
+        // 1. Identify the message type (Direct or Quoted)
+        const type = Object.keys(msg.message || {})[0];
+        const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+        
+        // 2. Extract Media Message (Support for Image, Video, Document, ViewOnce)
+        let mediaMessage = msg.message?.imageMessage || 
+                           msg.message?.videoMessage || 
+                           quoted?.imageMessage || 
+                           quoted?.videoMessage || 
+                           quoted?.documentWithCaptionMessage?.message?.videoMessage ||
+                           quoted?.documentWithCaptionMessage?.message?.imageMessage ||
+                           msg.message?.viewOnceMessageV2?.message?.imageMessage || 
+                           msg.message?.viewOnceMessageV2?.message?.videoMessage;
 
-            if (fs.existsSync(imagePath)) {
-                return sock.sendMessage(chat, { image: { url: imagePath }, caption: helpMsg });
-            } else {
-                return sock.sendMessage(chat, { text: helpMsg });
-            }
+        // 3. If no media found, show Professional Help Menu
+        if (!mediaMessage) {
+            const helpMenu = `*👺 ASURA MD STICKER ENGINE* \n\n` +
+                             `*Reply to any media to convert:* \n` +
+                             `◈ _Images & Documents_\n` +
+                             `◈ _Videos & GIFs_\n` +
+                             `◈ _ViewOnce Media_\n\n` +
+                             `> *Usage:* Send .sticker as a reply`;
+            return sock.sendMessage(chat, { text: helpMenu }, { quoted: msg });
         }
 
-        // മീഡിയ ടൈപ്പ് കൃത്യമായി കണ്ടെത്തുന്നു
-        const isVideo = message.hasOwnProperty('videoMessage') || (message.mimetype && message.mimetype.includes('video'));
-        const mediaType = isVideo ? 'video' : 'image';
+        // 4. Determine Media Type for Downloader
+        const isVideo = mediaMessage.hasOwnProperty('videoMessage') || 
+                        (mediaMessage.mimetype && mediaMessage.mimetype.includes('video'));
+        const downloadType = isVideo ? 'video' : 'image';
 
-        // പ്രോസസ്സിംഗ് മെസ്സേജ്
-        await sock.sendMessage(chat, { text: "⏳ *Asura MD Processing Your Sticker...*" }, { quoted: msg });
+        // 5. Visual Feedback
+        await sock.sendMessage(chat, { react: { text: "🎨", key: msg.key } });
 
-        // മീഡിയ ബഫറിലേക്ക് ഡൗൺലോഡ് ചെയ്യുന്നു
-        const stream = await downloadContentFromMessage(message, mediaType);
+        // 6. Download Media Content
+        const stream = await downloadContentFromMessage(mediaMessage, downloadType);
         let buffer = Buffer.from([]);
         for await (const chunk of stream) {
             buffer = Buffer.concat([buffer, chunk]);
         }
 
-        // സ്റ്റിക്കർ നിർമ്മാണം
+        // 7. Sticker Configuration (Professional Grade)
         const sticker = new Sticker(buffer, {
-            pack: 'Asura MD 👺', 
-            author: 'Arun Cumar', 
+            pack: 'Asura MD Pack 👺',
+            author: 'Arun Cumar',
             type: StickerTypes.FULL, 
-            categories: ['🤩', '🎉'],
-            id: 'asura-md-sticker',
-            quality: 30, 
-            effort: 2    
+            categories: ['🔥', '✨'],
+            id: 'asura_pro_sticker',
+            quality: 30 
         });
 
+        // 8. Generate and Send
         const stickerBuffer = await sticker.toBuffer();
-
-        // സ്റ്റിക്കർ അയക്കുന്നു
         await sock.sendMessage(chat, { sticker: stickerBuffer }, { quoted: msg });
 
-        // ഓഡിയോ അയക്കുന്നു (ഉണ്ടെങ്കിൽ മാത്രം)
-        if (fs.existsSync(songPath)) {
-            await sock.sendMessage(chat, { 
-                audio: { url: songPath }, 
-                mimetype: 'audio/ogg; codecs=opus', 
-                ptt: true 
-            }, { quoted: msg });
-        }
-
     } catch (error) {
-        console.error("Sticker Error:", error);
-        sock.sendMessage(chat, { text: "❌ *Error:* സ്റ്റിക്കർ നിർമ്മാണം പരാജയപ്പെട്ടു. വീഡിയോ ആണെങ്കിൽ 7 സെക്കൻഡിൽ താഴെയാണെന്ന് ഉറപ്പുവരുത്തുക." });
+        console.error("Sticker Engine Error:", error);
+        await sock.sendMessage(chat, { text: "❌ *Error:* Failed to process sticker. Ensure the file is not corrupted." });
     }
 };
