@@ -1,47 +1,58 @@
 import { downloadContentFromMessage } from '@whiskeysockets/baileys';
 
-export default async (sock, msg, args) => {
+export default async (sock, msg) => {
     const chat = msg.key.remoteJid;
-    
-    // View Once മെസ്സേജിന് മറുപടി (Reply) നൽകിയിട്ടുണ്ടോ എന്ന് പരിശോധിക്കുന്നു
-    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    
-    if (!quoted) {
+    const quoted = msg.message?.extendedTextMessage?.contextInfo;
+
+    // 1. Check if the message is a reply
+    if (!quoted || !quoted.quotedMessage) {
         return sock.sendMessage(chat, { text: "❌ Please reply to a *View Once* message!" }, { quoted: msg });
     }
 
-    // View Once കണ്ടന്റ് ഏതാണെന്ന് കണ്ടെത്തുന്നു (Image, Video, or Audio)
-    const type = Object.keys(quoted)[0];
-    const viewOnce = quoted[type]?.viewOnce;
+    let qMsg = quoted.quotedMessage;
 
-    if (!viewOnce) {
-        return sock.sendMessage(chat, { text: "❌ This is not a *View Once* message!" }, { quoted: msg });
+    // 2. Resolve ViewOnce Message (v2 and v2Extension support)
+    if (qMsg.viewOnceMessageV2) qMsg = qMsg.viewOnceMessageV2.message;
+    else if (qMsg.viewOnceMessageV2Extension) qMsg = qMsg.viewOnceMessageV2Extension.message;
+
+    // 3. Identify Media Type
+    const mType = Object.keys(qMsg)[0];
+    const media = qMsg[mType];
+
+    // Validate if it's actual view-once media
+    if (!['imageMessage', 'videoMessage', 'audioMessage'].includes(mType)) {
+        return sock.sendMessage(chat, { text: "❌ Valid View-Once media not found!" }, { quoted: msg });
     }
 
     try {
-        // കണ്ടന്റ് ഡൗൺലോഡ് ചെയ്യുന്നു (No storage, stays in memory buffer)
-        const media = quoted[type];
-        const stream = await downloadContentFromMessage(media, type === 'imageMessage' ? 'image' : type === 'videoMessage' ? 'video' : 'audio');
+        // 4. Download content to memory buffer (No local storage)
+        const mediaType = mType.replace('Message', '');
+        const stream = await downloadContentFromMessage(media, mediaType);
         
         let buffer = Buffer.from([]);
         for await (const chunk of stream) {
             buffer = Buffer.concat([buffer, chunk]);
         }
 
-        const caption = "> *👺⃝⃘̉ Asura MD*";
+        const responseCaption = `> *👺⃝⃘̉ Asura MD View-Once*`;
 
-        // തിരികെ അയക്കുന്നു
-        if (type === 'imageMessage') {
-            await sock.sendMessage(chat, { image: buffer, caption: caption }, { quoted: msg });
-        } else if (type === 'videoMessage') {
-            await sock.sendMessage(chat, { video: buffer, caption: caption }, { quoted: msg });
-        } else if (type === 'audioMessage') {
-            await sock.sendMessage(chat, { audio: buffer, mimetype: 'audio/ogg', ptt: false }, { quoted: msg });
-            await sock.sendMessage(chat, { text: caption }, { quoted: msg });
+        // 5. Re-send based on type
+        if (mType === 'imageMessage') {
+            await sock.sendMessage(chat, { image: buffer, caption: responseCaption }, { quoted: msg });
+        } 
+        else if (mType === 'videoMessage') {
+            await sock.sendMessage(chat, { video: buffer, caption: responseCaption }, { quoted: msg });
+        } 
+        else if (mType === 'audioMessage') {
+            await sock.sendMessage(chat, { 
+                audio: buffer, 
+                mimetype: 'audio/mp4', // More professional for most devices
+                ptt: false 
+            }, { quoted: msg });
         }
 
-    } catch (e) {
-        console.error(e);
-        await sock.sendMessage(chat, { text: "❌ Failed to fetch View Once media!" });
+    } catch (error) {
+        console.error("ViewOnce Error:", error);
+        await sock.sendMessage(chat, { text: "❌ Error: Failed to retrieve media. Content might have expired." });
     }
 };
