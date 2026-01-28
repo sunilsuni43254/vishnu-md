@@ -97,7 +97,7 @@ export default async (sock, msg, args) => {
 ┃ °☆°☆°☆°☆°☆°☆°☆°☆°
 ╠━━━━⛥❖⛥━━━❥❥❥
 ┃ *💡 How to Use 👺 Asura MD:*
-┃⦿ *Prefix:* [ . ] (Dot)
+┃⦿ *Prefix:* [ ! . / # ] 
 ┃⦿ *Usage:* Prefix + Command
 ┃⦿ *Example: .alive | .ping*
 ╚━━━━⛥❖⛥━━━❥❥❥
