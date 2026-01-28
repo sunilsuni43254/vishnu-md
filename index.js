@@ -80,7 +80,7 @@ async function startAsura() {
                          mtype === 'imageMessage' ? msg.message.imageMessage.caption :
                          mtype === 'videoMessage' ? msg.message.videoMessage.caption : '';
             
-            const prefix = "!","."; 
+            const prefix = ["!", ".", "/", "#"];  
             if (!body || !body.startsWith(prefix)) return;
 
             const args = body.slice(prefix.length).trim().split(/ +/);
