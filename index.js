@@ -10,7 +10,6 @@ import path from "path";
 import { pathToFileURL } from 'url';
 import readline from "readline";
 import express from "express"; 
-import { handleEvents } from './handlers.js';
 const sessionData = process.env.SESSION_ID;
 
 if (sessionData) {
@@ -64,11 +63,8 @@ async function startAsura() {
             if (shouldReconnect) startAsura();
         } else if (connection === 'open') {
             console.log('\x1b[36m✅ Asura MD Connected Successfully!\x1b[0m');
-              
-                handleEvents(sock); 
-            
             const myNumber = sock.user.id.split(':')[0] + "@s.whatsapp.net";
-            await sock.sendMessage(myNumber, { text: "*Asura MD is Online on WhatsApp!* 👺\n\nAll commands are now actived." });
+            await sock.sendMessage(myNumber, { text: "*Asura MD is Online on Whatsapp!* 👺\n\nAll commands are now active." });
         }
     });
 
@@ -84,20 +80,12 @@ async function startAsura() {
                          mtype === 'imageMessage' ? msg.message.imageMessage.caption :
                          mtype === 'videoMessage' ? msg.message.videoMessage.caption : '';
             
-            const prefix = "."; 
+            const prefix = "!","."; 
             if (!body || !body.startsWith(prefix)) return;
 
             const args = body.slice(prefix.length).trim().split(/ +/);
-            const commandName = args.shift().toLowerCase();            
-            const db = fs.existsSync('./media/asura_db.json') ? JSON.parse(fs.readFileSync('./media/asura_db.json')) : {};
-            const botMode = db.botMode || 'public';
-            const ownerNumber = sock.user.id.split(':')[0] + "@s.whatsapp.net";
-            const isOwner = msg.key.remoteJid === ownerNumber || msg.key.participant === ownerNumber;
+            const commandName = args.shift().toLowerCase();
 
-            if (botMode === 'private' && !isOwner) {
-            return; 
-            }
-            
             console.log(`\x1b[33m[COMMAND] -> ${commandName} from ${msg.key.remoteJid}\x1b[0m`);
 
             const commandPath = path.join(process.cwd(), 'commands', `${commandName}.js`);
