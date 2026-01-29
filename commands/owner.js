@@ -12,8 +12,11 @@ export default async (sock, msg, args) => {
 *╰─────────────❂*
 ╔━━━━━━━━━━━━━❥❥❥
 ┃ *👑 Name:* arun•°Cumar
+╰━━━━━━━━━━━━━━┈⊷
 ┃ *🚀 Role:* Main Developer
+╰━━━━━━━━━━━━━━┈⊷
 ┃ *📍 Location:* Kerala, India
+╰━━━━━━━━━━━━━━┈⊷
 ┃ *🧬 Bio:* Innovation through Code!
 ╠━━━━━━━━━━━━━❥❥❥
 ┃ *⚡ Status:* Online & Active
