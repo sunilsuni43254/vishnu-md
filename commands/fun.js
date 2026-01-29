@@ -40,16 +40,22 @@ export default async (sock, msg, args) => {
 *╰───────────────❂*
 ╭•°•❲ *Diagnostic Result* ❳•°•
  ⊙🎭 *TYPE:* Professional Joker
+╰━━━━━━━━━━━━━━┈⊷
  ⊙🧠 *BRAIN SIZE:* Peanut
+╰━━━━━━━━━━━━━━┈⊷
  ⊙🔋 *IQ LEVEL:* -999%
+╰━━━━━━━━━━━━━━┈⊷
 *◀︎ •၊၊||၊||||။‌၊||••*
 ╰╌╌╌╌╌╌╌╌╌╌࿐
 ╔━━━━━━━━━━━❥❥❥
 ┃👺 *Roast Activated for:* ${pushName}
-┃⁣
+┃
 ┃⁣🤣 If stupidity was a job, you'd be a CEO!
+╰━━━━━━━━━━━━━━┈⊷
 ┃🚶‍♂️ Your brain is like Internet Explorer.
+╰━━━━━━━━━━━━━━┈⊷
 ┃📦 Even Google can't find your logic.
+╰━━━━━━━━━━━━━━┈⊷
 ┃💀 You are the reason shampoo has instructions.
 ╚━━━━⛥❖⛥━━━━❥❥❥
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
