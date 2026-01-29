@@ -38,8 +38,11 @@ export default async (sock, msg, args) => {
 
 ╭╌❲ *ʙᴏᴛ ᴘᴇʀꜰᴏʀᴍᴀɴᴄᴇ* ❳
 ╎ ⊙ 🚀𝚂𝚙𝚎𝚎𝚍 : ${speedStatus}
+╰━━━━━━━━━━━━━━┈⊷
 ╎ ⊙ 📡𝙻𝚊𝚝𝚎𝚗𝚌𝚢 : ${Math.abs(ping)} 𝚖𝚜
+╰━━━━━━━━━━━━━━┈⊷
 ╎ ⊙ 📶𝙽𝚎𝚝𝚠𝚘𝚛𝚔 : ${netStatus}
+╰━━━━━━━━━━━━━━┈⊷
 ╎ ⊙ 👨‍💻𝙳𝚎𝚟 : arun.Cumar
 ╰╌╌╌╌╌╌╌╌╌╌╌╌࿐
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
