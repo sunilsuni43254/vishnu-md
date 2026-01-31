@@ -120,7 +120,7 @@ export default async (sock, msg, args) => {
 ┃ *💡 How to Use 👺 Asura MD:*
 ┃⦿ *Prefix:* [ ! , . / # ] 
 ┃⦿ *Usage:* Prefix + Command
-┃⦿ *Example: .alive | .ping*
+┃⦿ *Example: .alive | ,ping*
 ╚━━━━⛥❖⛥━━━❥❥❥
 
 > *✅Select a command from the list above and type it with a dot.*
