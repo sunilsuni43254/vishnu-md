@@ -2,8 +2,12 @@ import fs from 'fs';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const DB_PATH = './media/asura_db.json';
-const genAI = new GoogleGenerativeAI("YOUR_GEMINI_API_KEY"); 
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const genAI = new GoogleGenerativeAI("AIzaSyAjdhkNjek2l9VCm6N9upQ5L1WuZvb-CC4"); 
+
+const model = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash",
+    systemInstruction: "You are a close, helpful friend named Asura MD. Your tone is casual, supportive, and witty. Answer in the same language the user speaks to you (multilingual). Use emojis occasionally to feel more human. Don't be too formal like a robot; talk like a real buddy."
+});
 
 const getDB = () => {
     if (!fs.existsSync('./media')) fs.mkdirSync('./media');
@@ -18,50 +22,47 @@ export const handleEvents = async (sock) => {
 
             const chat = msg.key.remoteJid;
             const body = (msg.message.conversation || msg.message.extendedTextMessage?.text || "").trim();
-            const args = body.split(" ");
-            const command = args[0].toLowerCase();
             const db = getDB();
 
-            // --- 1. REMOTE CHATBOT CONTROL (.chatbot number/link) ---
-            if (command === '.chatbot') {
-                let target = args[1];
-                let status = args[2]?.toLowerCase(); 
-
-                if (!target || !status) {
-                    return sock.sendMessage(chat, { text: "❌ *Format:* .chatbot [number/link] [on/off]" });
+            // --- 1. CHATBOT TIMER CONTROL ---
+            // .chatbot off എന്ന് കൊടുത്താൽ ഓഫ് ചെയ്യാനുള്ള ഓപ്ഷൻ കൂടി ചേർത്തു
+            if (body.startsWith('.chatbot')) {
+                const args = body.split(" ");
+                
+                if (args[1] === 'off') {
+                    delete db[chat];
+                    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+                    return sock.sendMessage(chat, { text: "✅ Chatbot turned OFF." });
                 }
 
-                let targetJid;
-                if (target.includes('chat.whatsapp.com')) {
-                    // ഗ്രൂപ്പ് ലിങ്ക് വഴി ഐഡി എടുക്കുന്നു
-                    const code = target.split('chat.whatsapp.com/')[1];
-                    targetJid = await sock.groupAcceptInvite(code).catch(() => null);
-                    if (!targetJid) return sock.sendMessage(chat, { text: "❌ Invalid Group Link!" });
-                } else {
-                    // നമ്പർ വഴി JID എടുക്കുന്നു
-                    targetJid = target.replace(/[^0-9]/g, '') + "@s.whatsapp.net";
+                const mins = parseInt(args[1]);
+                if (isNaN(mins)) {
+                    return sock.sendMessage(chat, { text: "❌ *Format:* .chatbot [mins] or .chatbot off" });
                 }
 
-                // സേവ് ചെയ്യുന്നു
-                if (!db[targetJid]) db[targetJid] = {};
-                db[targetJid].chatbot = (status === 'on');
+                const expiryTime = Date.now() + (mins * 60 * 1000);
+                db[chat] = { expiry: expiryTime };
                 fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
 
-                return sock.sendMessage(chat, { text: `✅ Chatbot ${status.toUpperCase()} for: ${target}` });
+                return sock.sendMessage(chat, { text: `✅ Asura MD AI activated for *${mins}* minutes! 👺🤖` });
             }
 
-            // --- 2. AI CHAT LOGIC (Works in DM & Group) ---
-            const isChatbotOn = db[chat]?.chatbot || false;
+            // --- 2. AI LOGIC ---
+            const chatConfig = db[chat];
+            if (chatConfig && chatConfig.expiry) {
+                if (Date.now() < chatConfig.expiry) {
+                    if (body.startsWith('.') || body.startsWith('!')) return;
 
-            if (isChatbotOn && !body.startsWith('.')) {
-                await sock.sendPresenceUpdate('composing', chat);
+                    await sock.sendPresenceUpdate('composing', chat);
+                    const result = await model.generateContent(body);
+                    const aiText = result.response.text();
 
-                const result = await model.generateContent(body);
-                const aiText = result.response.text();
-
-                await sock.sendMessage(chat, { text: aiText }, { quoted: msg });
+                    await sock.sendMessage(chat, { text: aiText }, { quoted: msg });
+                } else {
+                    delete db[chat];
+                    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+                }
             }
-
         } catch (e) {
             console.error("Bot Error:", e);
         }
