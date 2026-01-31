@@ -10,21 +10,13 @@ import path from "path";
 import { pathToFileURL } from 'url';
 import readline from "readline";
 import express from "express"; 
-
-// --- 1. CONFIGURATION & SESSION SETUP ---
-const sessionPath = './session';
-if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath);
-
 const sessionData = process.env.SESSION_ID;
-if (sessionData && !fs.existsSync(path.join(sessionPath, 'creds.json'))) {
-    try {
-        
-        const decoded = sessionData.startsWith('{') ? sessionData : Buffer.from(sessionData, 'base64').toString('utf-8');
-        fs.writeFileSync(path.join(sessionPath, 'creds.json'), decoded);
-        console.log("✅ Session file successfully restored.");
-    } catch (e) {
-        console.error("❌ Failed to restore session:", e.message);
-    }
+
+if (sessionData) {
+    if (!fs.existsSync('./session')) fs.mkdirSync('./session');
+    
+    fs.writeFileSync('./session/creds.json', sessionData);
+    console.log("✅ Session file created from Environment Variable");
 }
 
 // --- 2. UPTIME SERVER (For Render/Koyeb) ---
