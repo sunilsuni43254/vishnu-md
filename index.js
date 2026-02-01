@@ -59,26 +59,29 @@ async function startAsura() {
 
     // --- 4. CONNECTION HANDLER ---
     sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect } = update;
+    const { connection, lastDisconnect } = update;
+    
+    if (connection === 'close') {
+        const reason = lastDisconnect?.error?.output?.statusCode;
+        console.log(`❌ Connection closed. Reason: ${reason}`);
         
-        if (connection === 'close') {
-            const reason = lastDisconnect?.error?.output?.statusCode;
-            console.log(`❌ Connection closed. Reason Code: ${reason}`);
-            
-            if (reason !== DisconnectReason.loggedOut) {
-                console.log("🔄 Reconnecting in 5 seconds...");
-                setTimeout(() => startAsura(), 5000);
-            } else {
-                console.log("🚫 Session Expired/Logged Out. Please delete 'session' folder and restart.");
-                process.exit(1);
-            }
-        } else if (connection === 'open') {
-            console.log('\x1b[36m\n========================================\n✅ ASURA MD CONNECTED SUCCESSFULLY!\n ========================================\x1b[0m');
-            
-            const myId = sock.user.id.split(':')[0] + "@s.whatsapp.net";
-            await sock.sendMessage(myId, { text: "👺 *Asura MD is Online!*\n\nSystem ✅ successfully connected." });
+        if (reason === 440) {
+            console.log("⚠️ Conflict detected. Retrying in 10s...");
+            setTimeout(() => startAsura(), 10000);
+        } 
+        // restart
+        else if (reason !== DisconnectReason.loggedOut) {
+            console.log("🔄 Reconnecting...");
+            startAsura();
+        } else {
+            console.log("🚫 Session Expired. Please Link Again.");
         }
-    });
+    } else if (connection === 'open') {
+        console.log('\x1b[36m✅ Asura MD Connected!\x1b[0m');
+        const myId = sock.user.id.split(':')[0] + "@s.whatsapp.net";
+        await sock.sendMessage(myId, { text: "👺 *Asura MD is Online!*" });
+    }
+});
 
     // --- 5. MESSAGE & COMMAND HANDLER ---
     sock.ev.on('messages.upsert', async (chatUpdate) => {
