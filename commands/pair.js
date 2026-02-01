@@ -40,18 +40,29 @@ export default async (sock, msg, args) => {
             
             // കോഡ് ബ്ലോക്കിനുള്ളിൽ കൊടുത്താൽ സിംഗിൾ ടാപ്പിൽ കോപ്പി ചെയ്യാം
             const responseText = `
+┌────────────┐
+👺 ASURA MD ᴠ2.0
+└────────────┘
+╭━━❐━⪼
+┇๏ _*🔯Prefixes: . , ! # $ & @*_
+┇๏  *🌟_ASURA-MDMini WhatsApp Bot_ 🌟*
+┇๏ *🤖_Your Personal WhatsApp Assistant_🔥* 
+┇๏ *📜 _Send ".help" For Commands_* 
+╰━━❑━⪼
 *╭━━〔 🤖 ASURA PAIRING 〕━━┈⊷*
 ┃
-┃ 🔑 *YOUR CODE:*
+┃ 🔑 *YOUR CODE*
 ┃ \`\`\`${code.toUpperCase()}\`\`\`
 ┃
 *╰━━━━━━━━━━━━━━━┈⊷*
 
-*HOW TO USE:*
+*🤔 HOW TO USE:*
+━━━━━━━━━━━━━━━━
 1. Open WhatsApp > Settings.
-2. Go to 'Linked Devices' > 'Link a Device'.
+2. Go to 'Linked Devices' 👉 'Link a Device'.
 3. Select 'Link with phone number instead'.
-4. Tap and copy the code above and paste it.`;
+4. Tap and copy the code above and paste it.
+> *© Pᴏᴡᴇʀᴇᴅ Bʏ 👺 ASURA-MD ♡*`;
 
             await sock.sendMessage(chat, { text: responseText }, { quoted: msg });
         }
