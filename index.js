@@ -70,53 +70,59 @@ async function startAsura() {
         }
     });
 
-    // --- 5. MESSAGE & COMMAND HANDLER ---
+        // --- 5. MESSAGE & COMMAND HANDLER ---
     sock.ev.on('messages.upsert', async (chatUpdate) => {
         try {
             const msg = chatUpdate.messages[0];
             if (!msg.message || msg.key.fromMe) return;
 
             const mtype = Object.keys(msg.message)[0];
-            const body = (mtype === 'conversation') ? msg.message.conversation :
-                         (mtype === 'extendedTextMessage') ? msg.message.extendedTextMessage.text :
-                         (mtype === 'imageMessage') ? msg.message.imageMessage.caption :
-                         (mtype === 'videoMessage') ? msg.message.videoMessage.caption : '';
+            let body = (mtype === 'conversation') ? msg.message.conversation :
+                       (mtype === 'extendedTextMessage') ? msg.message.extendedTextMessage.text :
+                       (mtype === 'imageMessage') ? msg.message.imageMessage.caption :
+                       (mtype === 'videoMessage') ? msg.message.videoMessage.caption : '';
             
-            // --- PREFIX CHECK ---
-                const prefixRegex = "!@#$%^&*()_+-=[]{};':\"\\|,.<>/?~₹£€÷×+`".split("");
-                const isCmd = prefixRegex.test(body);
-                if (!isCmd) return;
+            if (!body) return;
 
-                const prefix = body.match(prefixRegex)[0];
-                
-                // COMMAND & ARGS  
-                const args = body.slice(prefix.length).trim().split(/ +/);
-                const commandName = args.shift().toLowerCase();
+            // --- PREFIX CHECK (Fixed Logic) ---
+            const prefixes = "!@#$%^&*()_+-=[]{};':\"\\|,.<>/?~₹£€÷×+`";
+            const firstChar = body.charAt(0);
+            const isCmd = prefixes.includes(firstChar);
+
+            if (!isCmd) return;
+
+            const prefix = firstChar;
+            const args = body.slice(prefix.length).trim().split(/ +/);
+            const commandName = args.shift().toLowerCase();
             
-                if (commandName === '') {
-                    await sock.sendMessage(msg.key.remoteJid, { text: "👺 *Asura MD:* Please Enter A Command After The Prefix (Eg: .menu)🥰" });
-                    return;
-                }
+            if (!commandName) {
+                await sock.sendMessage(msg.key.remoteJid, { text: "👺 *Asura MD:* Please Enter A Command After The Prefix (Eg: .menu)🥰" });
+                return;
+            }
             
             // Command Execution
             const commandPath = path.join(process.cwd(), 'commands', `${commandName}.js`);
 
             if (fs.existsSync(commandPath)) {
+                // pathToFileURL 
                 const commandModule = await import(pathToFileURL(commandPath).href + `?update=${Date.now()}`);
+                
+                // Export Default:
                 const runCommand = commandModule.default || commandModule;
                 
                 if (typeof runCommand === 'function') {
                     console.log(`\x1b[32m[EXEC] -> ${commandName}\x1b[0m`);
                     await runCommand(sock, msg, args);
+                } else {
+                    console.log(`\x1b[31m[ERROR] -> ${commandName}.js does not export a function!\x1b[0m`);
                 }
             } else {
-                console.log(`\x1b[31m[SKIP] -> ${commandName} (Not Found)\x1b[0m`);
+                console.log(`\x1b[31m[SKIP] -> ${commandName} (Not Found in commands folder)\x1b[0m`);
             }
         } catch (err) {
             console.error("\x1b[31m[ERROR]\x1b[0m", err);
         }
     });
-}
 
 startAsura();
 
