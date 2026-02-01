@@ -129,21 +129,29 @@ _The bot is ready to use!_`;
             // Command Execution
             const commandPath = path.join(process.cwd(), 'commands', `${commandName}.js`);
 
-            if (fs.existsSync(commandPath)) {
-                // pathToFileURL 
-                const commandModule = await import(pathToFileURL(commandPath).href + `?update=${Date.now()}`);
-                
-                // Export Default:
-                const runCommand = commandModule.default || commandModule;
-                
-                if (typeof runCommand === 'function') {
-                    console.log(`\x1b[32m[EXEC] -> ${commandName}\x1b[0m`);
-                    await runCommand(sock, msg, args);
-                } else {
-                    console.log(`\x1b[31m[ERROR] -> ${commandName}.js does not export a function!\x1b[0m`);
-                }
-            } else {
-                console.log(`\x1b[31m[SKIP] -> ${commandName} (Not Found in commands folder)\x1b[0m`);
+if (fs.existsSync(commandPath)) {
+    try {   
+        const fileUrl = pathToFileURL(commandPath).href;
+        
+        // import commands 
+        const commandModule = await import(fileUrl);
+        
+        // Export Default 
+        const runCommand = commandModule.default || commandModule;
+        
+        if (typeof runCommand === 'function') {
+            
+            console.log(`\x1b[36m[ASURA]\x1b[0m Executing: \x1b[32m${commandName}\x1b[0m`);
+            
+            await runCommand(sock, msg, args);
+        } else {
+            console.log(`\x1b[31m[ERROR]\x1b[0m ${commandName}.js must use 'export default async...'`);
+        }
+    } catch (err) {
+        console.error(`\x1b[31m[COMMAND ERROR]\x1b[0m Error in ${commandName}:`, err);
+    }
+} else {    
+       console.log(`\x1b[33m[SKIP]\x1b[0m -> ${commandName} not found.`);
             }
         } catch (err) {
             console.error("\x1b[31m[ERROR]\x1b[0m", err);
