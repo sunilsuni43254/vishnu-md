@@ -10,7 +10,7 @@ export default async (sock, msg, args) => {
     const sender = msg.key.participant || msg.key.remoteJid;
     const inputMsg = (msg.message?.conversation || msg.message?.extendedTextMessage?.text || "").trim();
 
-    // --- 1. യൂസർ നമ്പർ അയച്ചാൽ അത് ഹാൻഡിൽ ചെയ്യുന്നു ---
+    // --- 1. number Handler ---
     if (!isNaN(inputMsg) && global.fontStorage[sender]) {
         const index = parseInt(inputMsg) - 1;
         const fonts = global.fontStorage[sender];
@@ -88,7 +88,11 @@ export default async (sock, msg, args) => {
     // സ്റ്റോറേജ് അപ്‌ഡേറ്റ് ചെയ്യുന്നു
     global.fontStorage[sender] = userFonts;
 
-    const fontDesign = `*👺⃝⃘̉̉━━━━━━━━◆◆◆*
+   const fontDesign = `
+*👺⃝⃘̉̉━━━━━━━━◆◆◆*
+*┊ ┊ ┊ ┊ ┊*
+*┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
+*┊ ☪︎⋆*
 *⊹* 🪔 *Font Generator*
 *✧* 「 \`👺Asura MD\` 」
 *╰───────────────❂*
