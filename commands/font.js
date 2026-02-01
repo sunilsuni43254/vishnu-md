@@ -101,6 +101,7 @@ export default async (sock, msg, args) => {
 ${result}     
 ╰╌╌╌╌╌╌╌╌╌╌࿐
 > *Reply with number (1-${keys.length}) to get the font.*
+> 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇ BY 👺Asura MD*`;
 
     // ചിത്രം അയക്കുന്നു
