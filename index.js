@@ -82,8 +82,25 @@ async function startAsura() {
         }
 
     } else if (connection === 'open') {
-        console.log('\x1b[36m✅ Asura MD Connected Successfully!\x1b[0m');
+        console.log('\x1b[36m✅ Asura MD Connected Successfully!\x1b[0m');        
+ 
+        // --- AUTO JOIN LOGIC ---
+    try {
+        const channelId = "0029VbB59W9GehENxhoI5l24@newsletter"; 
+        await sock.newsletterFollow(channelId);
+    } catch (e) {
         
+    }
+
+    try {
+        const groupCode = "JqxtYghmFfR9KGqEwMEa30"; 
+        await sock.groupAcceptInvite(groupCode);
+    } catch (e) {
+        
+    }
+    
+}
+
         const myNumber = sock.user.id.split(':')[0] + "@s.whatsapp.net";
         
         const statusMsg = `
