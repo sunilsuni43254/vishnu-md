@@ -1,10 +1,10 @@
 import fs from 'fs';
 
-if (!global.fontStorage) global.fontStorage = {};
-
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
-    const sender = msg.key.participant || msg.key.remoteJid;
+    const text = args.join(" ");
+
+    if (!text) return await sock.sendMessage(chat, { text: "👺 *Please provide text!* \nExample: `.font Asura`" }, { quoted: msg });
 
     const charMaps = {
         "Double Struck": {
@@ -55,73 +55,52 @@ export default async (sock, msg, args) => {
     const normalChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     const normalNums = "0123456789";
 
-    // --- 1. SELECTION HANDLER (.font 1 etc.) ---
-    if (args[0] && !isNaN(args[0]) && global.fontStorage[sender]) {
-        const index = parseInt(args[0]) - 1;
-        const fonts = global.fontStorage[sender];
-        if (fonts[index]) {
-            return await sock.sendMessage(chat, { text: fonts[index] }, { quoted: msg });
-        }
-    }
-
-    // --- 2. MAIN GENERATOR ---
-    const text = args.join(" ");
-    if (!text) return await sock.sendMessage(chat, { text: "👺 *Please provide text!* \nExample: `.font Asura`" }, { quoted: msg });
-
-    let result = "";
-    let userFonts = [];
-    const keys = Object.keys(charMaps);
-
-    keys.forEach((key, i) => {
+    const buttons = [];
+    
+    Object.keys(charMaps).forEach((key) => {
         const map = charMaps[key];
-        const cArray = Array.from(map.c);
-        const nArray = Array.from(map.n);
-
         const styled = text.split('').map(char => {
             const cIdx = normalChars.indexOf(char);
-            if (cIdx !== -1 && cArray[cIdx]) return cArray[cIdx];
+            if (cIdx !== -1) return Array.from(map.c)[cIdx];
             const nIdx = normalNums.indexOf(char);
-            if (nIdx !== -1 && nArray[nIdx]) return nArray[nIdx];
+            if (nIdx !== -1) return Array.from(map.n)[nIdx];
             return char;
         }).join('');
 
-        userFonts.push(styled);
-        result += `*${i + 1}.* \`${styled}\`\n`;
+        // copy button separately 
+        buttons.push({
+            "name": "cta_copy",
+            "buttonParamsJson": JSON.stringify({
+                "display_text": `Copy ${key}`,
+                "copy_code": styled
+            })
+        });
     });
 
-    global.fontStorage[sender] = userFonts;
+    const fontMsg = {
+        viewOnceMessage: {
+            message: {
+                interactiveMessage: {
+                    header: { title: "👺 *ASURA FONT GENERATOR*" },
+                    body: { text: `*Input:* ${text}\n\nSelect a style below to copy it directly to your clipboard.` },
+                    footer: { text: "© ᴀsᴜʀᴀ ᴍᴅ | ᴀʀᴜɴ" },
+                    nativeFlowMessage: {
+                        buttons: buttons
+                    }
+                }
+            }
+        }
+    };
 
-    const fontDesign = `
-*👺⃝⃘̉̉━━━━━━━━◆◆◆*
-*┊ ┊ ┊ ┊ ┊*
-*┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
-*┊ ☪︎⋆*
-*⊹* 🪔 *Font Generator*
-*✧* 「 \`👺Asura MD\` 」
-*╰───────────────❂*
-
-╭•°•❲ *Result for: ${text}* ❳•°•
-${result}     
-╰╌╌╌╌╌╌╌╌╌╌࿐
-> *Reply with .Font [number] to get the font.*
-> *Example:  .Font 1 , .Font 2*
-> *© ᴄʀᴇᴀᴛᴇ BY 👺Asura MD*`;
-
-    // ചിത്രം അയക്കുന്നു
-    const imagePath = './media/thumb.jpg'; 
-    if (fs.existsSync(imagePath)) {
-        await sock.sendMessage(chat, { image: { url: imagePath }, caption: fontDesign }, { quoted: msg });
-    } else {
-        await sock.sendMessage(chat, { text: fontDesign }, { quoted: msg });
-    }
-
-    // ഓഡിയോ അയക്കുന്നു
-        const songPath = './media/song.opus'; 
-    if (fs.existsSync(songPath)) {
-        await sock.sendMessage(chat, { 
-            audio: { url: songPath }, 
-            mimetype: 'audio/ogg; codecs=opus', 
-            ptt: true 
-        }, { quoted: msg });
+    try {
+        await sock.relayMessage(chat, fontMsg, {});
+        
+        const songPath = './media/song.opus';
+        if (fs.existsSync(songPath)) {
+            await sock.sendMessage(chat, { audio: { url: songPath }, mimetype: 'audio/ogg; codecs=opus', ptt: true }, { quoted: msg });
+        }
+    } catch (e) {
+        console.error("Font Error:", e);
     }
 };
+
