@@ -1,61 +1,63 @@
-import fs from 'fs';
-
 export default async (sock, msg, args) => {
     const from = msg.key.remoteJid;
     const amount = args[0] || "10";
     const myUpi = "08arun7@upi"; 
-    const name = "Asura MD Support";
-    const thumbPath = './media/thumb.jpg'; 
-
-    // UPI Link & QR API
-    const payUrl = `upi://pay?pa=${myUpi}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR`;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(payUrl)}`;
 
     try {
-        await sock.sendMessage(from, { react: { text: "💳", key: msg.key } });
+        await sock.sendMessage(from, { react: { text: "💰", key: msg.key } });
 
         const donateText = `
-*─『 💳 QUICK CHECKOUT 』─*
-
+*─『 💳 ASURA MD PAY 』─*
 *Hello,* @${msg.pushName || 'User'}
 *Support the development of Asura MD.*
 
-*PAYMENT SUMMARY*
+*DETAILS*
 ━━━━━━━━━━━━━━━━━
-⊙ *Payee:* ${name}
+⊙ *Payee:* arun•°Cumar
 ⊙ *Amount:* ₹${amount}.00
-⊙ *Status:* Pending
+⊙ *UPI:* \`${myUpi}\`
 ━━━━━━━━━━━━━━━━━
 
-*HOW TO PAY?*
-1. *Click the Card:* Tap the banner above to pay via GPay/PhonePe/Paytm.
-2. *Scan QR:* Use the QR code attached for manual scanning.
-3. *Manual:* Copy UPI ID: \`${myUpi}\`
+🥰🥰🥰`;
 
-> 🛡️ _Encrypted & Secure Transaction_
-*© ᴀsᴜʀᴀ ᴍᴅ | ᴀʀᴜɴ*`;
-
-        // Thumbnail ഫയൽ ചെക്ക് ചെയ്യുന്നു
-        let buffer = fs.existsSync(thumbPath) ? fs.readFileSync(thumbPath) : { url: qrUrl };
-
-        await sock.sendMessage(from, {
-            image: { url: qrUrl },
-            caption: donateText,
-            contextInfo: {
-                mentionedJid: [msg.sender],
-                externalAdReply: {
-                    title: `PAY ₹${amount}.00 NOW ⚡`,
-                    body: "Tap here to complete your payment",
-                    thumbnail: fs.existsSync(thumbPath) ? fs.readFileSync(thumbPath) : null, 
-                    sourceUrl: payUrl, 
-                    mediaType: 1,
-                    renderLargerThumbnail: true,
-                    showAdAttribution: false 
+        // Native Flow Buttons (Modern & Stable)
+        const message = {
+            viewOnceMessage: {
+                message: {
+                    interactiveMessage: {
+                        header: { title: "⚡ *QUICK PAYMENT*" },
+                        body: { text: donateText },
+                        footer: { text: "© ᴀsᴜʀᴀ ᴍᴅ | ᴀʀᴜɴ" },
+                        nativeFlowMessage: {
+                            buttons: [
+                                {
+                                    "name": "cta_url",
+                                    "buttonParamsJson": `{"display_text":"💸 PAY NOW","url":"https://pay.upilink.in/pay/${myUpi}?am=${amount}","merchant_url":"https://pay.upilink.in/pay/${myUpi}?am=${amount}"}`
+                                },
+                                {
+                                    "name": "quick_reply",
+                                    "buttonParamsJson": `{"display_text":"👤 OWNER","id":"!owner"}`
+                                },
+                                {
+                                    "name": "quick_reply",
+                                    "buttonParamsJson": `{"display_text":"❓ HELP","id":"!help"}`
+                                }
+                            ]
+                        },
+                        contextInfo: {
+                            mentionedJid: [msg.sender],
+                            forwardingScore: 999,
+                            isForwarded: true
+                        }
+                    }
                 }
             }
-        }, { quoted: msg });
+        };
+
+        await sock.relayMessage(from, message, {});
 
     } catch (e) {
         console.error('Donate Error:', e);
+        await sock.sendMessage(from, { text: `Pay via UPI: ${myUpi}` }, { quoted: msg });
     }
 };
