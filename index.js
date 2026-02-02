@@ -14,17 +14,21 @@ const sessionPath = './session';
 const sessionData = process.env.SESSION_ID;
 
 if (sessionData) {
-    if (!fs.existsSync('./session')) fs.mkdirSync('./session');
+    if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath);   
     
-    fs.writeFileSync('./session/creds.json', sessionData);
-    console.log("✅ Session file created from Environment Variable");
+    const credsPath = path.join(sessionPath, 'creds.json');
+    if (!fs.existsSync(credsPath)) {
+        fs.writeFileSync(credsPath, sessionData);
+        console.log("✅ Session file restored from Environment Variable");
+    } else {
+        console.log("ℹ️ Existing session file found, skipping overwrite.");
+    }
 }
 
 // --- 2. UPTIME SERVER (For Render/Koyeb) ---
 const app = express();
-const port = process.env.PORT || 3000;
-app.get('/', (req, res) => res.status(200).send('_Asura MD is Running! 👺_'));
-app.listen(port, () => console.log(`🚀 Server active on port ${port}`));
+app.get('/', (req, res) => res.send('Asura MD is Alive! 👺'));
+app.listen(process.env.PORT || 3000);
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const question = (text) => new Promise((resolve) => rl.question(text, resolve));
@@ -42,7 +46,7 @@ async function startAsura() {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
         },
-        printQRInTerminal: false,
+        printQRInTerminal: true,
         logger: pino({ level: "silent" }),
         browser: ["Asura-MD", "Safari", "3.0.0"]
     });
@@ -99,6 +103,7 @@ _The bot is ready to use!_`;
         // --- 5. MESSAGE & COMMAND HANDLER ---
     sock.ev.on('messages.upsert', async (chatUpdate) => {
         try {
+            if (chatUpdate.type !== 'notify') return;
             const msg = chatUpdate.messages[0];
             if (!msg.message || msg.key.fromMe) return;
 
@@ -129,35 +134,20 @@ _The bot is ready to use!_`;
             // Command Execution
             const commandPath = path.join(process.cwd(), 'commands', `${commandName}.js`);
 
-if (fs.existsSync(commandPath)) {
-    try {   
-        const fileUrl = pathToFileURL(commandPath).href;
-        
-        // import commands 
-        const commandModule = await import(fileUrl);
-        
-        // Export Default 
-        const runCommand = commandModule.default || commandModule;
-        
-        if (typeof runCommand === 'function') {
-            
-            console.log(`\x1b[36m[ASURA]\x1b[0m Executing: \x1b[32m${commandName}\x1b[0m`);
-            
-            await runCommand(sock, msg, args);
-        } else {
-            console.log(`\x1b[31m[ERROR]\x1b[0m ${commandName}.js must use 'export default async...'`);
-        }
-    } catch (err) {
-        console.error(`\x1b[31m[COMMAND ERROR]\x1b[0m Error in ${commandName}:`, err);
-    }
-} else {    
-       console.log(`\x1b[33m[SKIP]\x1b[0m -> ${commandName} not found.`);
+            if (fs.existsSync(commandPath)) {
+                
+                const fileUrl = pathToFileURL(commandPath).href + `?update=${Date.now()}`;
+                const commandModule = await import(fileUrl);
+                const runCommand = commandModule.default;
+
+                if (typeof runCommand === 'function') {
+                    await runCommand(sock, msg, args);
+                }
             }
         } catch (err) {
-            console.error("\x1b[31m[ERROR]\x1b[0m", err);
+            console.error("Critical Error:", err);
         }
     });
 }
 
 startAsura();
-
