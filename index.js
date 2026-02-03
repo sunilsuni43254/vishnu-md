@@ -64,8 +64,14 @@ async function startAsura() {
     });
 
     // Pairing logic for initial setup
-    if (!sock.authState.creds.registered) {
+        if (!sock.authState.creds.registered) {
         console.log("\n\x1b[31m[!] No Session Found.\x1b[0m");
+:
+        if (process.env.RENDER || process.env.PORT) {
+            console.log("❌ Cloud environment detected. Please provide SESSION_ID in Env Variables.");
+        } else {
+            const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+            const question = (text) => new Promise((resolve) => rl.question(text, resolve));
         const phoneNumber = await question('📞 Enter Phone Number with Country Code (eg: 91xxxx): ');
         const code = await sock.requestPairingCode(phoneNumber.replace(/[^0-9]/g, ''));
         console.log(`\n\x1b[32mYOUR 🗝️ PAIRING CODE: \x1b[1m${code}\x1b[0m\n`);
