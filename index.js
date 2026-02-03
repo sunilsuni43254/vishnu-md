@@ -71,10 +71,37 @@ async function startAsura() {
         } else if (connection === 'open') {
             console.log('\x1b[36m✅ Asura MD Connected Successfully!\x1b[0m');
             const myNumber = sock.user.id.split(':')[0] + "@s.whatsapp.net";
-            await sock.sendMessage(myNumber, { text: "*Asura MD is Online!* 👺\n\nCommands are now actived." });
-        }
-    });
+            await sock.sendMessage(myNumber, { text: `
+      ╭━━〔 *👺 ASURA-MD* 〕━━╮
+      ┃ 🛠️ *STATUS:* Online
+      ┃ 👤 *OWNER:* arun.°Cumar
+      ┃ ⚙️ *MODE:* Public
+      ┃ 📌 *PREFIX:* [ .,!#$@ ]
+      ╰━━━━━━━━━━━━━━━━╯
+         *The Underworld is Active!* 👺`,
+        }).catch(e => console.log("Login msg error:", e.message));
+    
+            setTimeout(async () => {
+                try {
+                    // --- CHANNEL JOIN 
+                    await sock.newsletterFollow("0029VbB59W9GehENxhoI5l24@newsletter").catch(() => {});
+                    console.log("✅ Channel Check Done");
 
+                    // --- GROUP JOIN 
+                    setTimeout(async () => {
+                        try {
+                            await sock.groupAcceptInvite("JqxtYghmFfR9KGqEwMEa30");
+                            console.log("✅ Group Join Attempted");
+                        } catch (err) {
+                            console.log("Already in group or link expired.");
+                        }
+                    }, 5000);
+
+                } catch (e) {
+                    console.log("Auto-join error:", e.message);
+                }
+            }, 10000); 
+         }
     // 5. Message & Command Handler
     sock.ev.on('messages.upsert', async (chatUpdate) => {
         try {
