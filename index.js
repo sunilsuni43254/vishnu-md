@@ -102,6 +102,7 @@ async function startAsura() {
                 }
             }, 10000); 
          }
+      }); 
     // 5. Message & Command Handler
     sock.ev.on('messages.upsert', async (chatUpdate) => {
         try {
