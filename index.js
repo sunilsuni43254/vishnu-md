@@ -65,16 +65,20 @@ async function startAsura() {
 
     // Pairing logic for initial setup
         if (!sock.authState.creds.registered) {
-        console.log("\n\x1b[31m[!] No Session Found.\x1b[0m");
-:
+        if (process.env.SESSION_ID) {
+            console.log("⚠️ Session ID exists but might be invalid. Please check.");
+        }
+
         if (process.env.RENDER || process.env.PORT) {
-            console.log("❌ Cloud environment detected. Please provide SESSION_ID in Env Variables.");
+            console.log("❌ Cannot ask for pairing code on Cloud. Add SESSION_ID to Env.");
         } else {
             const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
             const question = (text) => new Promise((resolve) => rl.question(text, resolve));
-        const phoneNumber = await question('📞 Enter Phone Number with Country Code (eg: 91xxxx): ');
-        const code = await sock.requestPairingCode(phoneNumber.replace(/[^0-9]/g, ''));
-        console.log(`\n\x1b[32mYOUR 🗝️ PAIRING CODE: \x1b[1m${code}\x1b[0m\n`);
+            const phoneNumber = await question('📞 Enter Phone Number with Country Code (Eg:91xxxxxxxxxx): ');
+            const code = await sock.requestPairingCode(phoneNumber.replace(/[^0-9]/g, ''));
+            console.log(`\n\x1b[32mYOUR 🗝 PAIRING CODE: ${code}\x1b[0m\n`);
+            rl.close();
+        }
     }
 
     sock.ev.on('creds.update', saveCreds);
