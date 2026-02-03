@@ -12,29 +12,19 @@ import readline from "readline";
 import express from "express"; 
 const sessionPath = './session';
 const sessionData = process.env.SESSION_ID;
-
+//SESSION_ID MANAGE
 if (sessionData) {
-   
     if (!fs.existsSync(sessionPath)) {
         fs.mkdirSync(sessionPath, { recursive: true });
     }
-
     const credsPath = path.join(sessionPath, 'creds.json');
     
     try {
-        
-        if (!fs.existsSync(credsPath)) {
-           
-            fs.writeFileSync(credsPath, sessionData.trim());
-            console.log("✅ Session file restored from Environment Variable");
-        } else {
-            console.log("ℹ️ Existing session file found, skipping overwrite.");
-        }
+        fs.writeFileSync(credsPath, sessionData.trim());
+        console.log("✅ Session file updated from Environment Variable");
     } catch (error) {
         console.error("❌ Error restoring session:", error.message);
     }
-} else {
-    console.log("⚠️ No SESSION_ID found in Environment Variables.");
 }
 
 // --- 2. UPTIME SERVER (For Render/Koyeb) ---
