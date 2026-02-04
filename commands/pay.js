@@ -3,73 +3,81 @@ import path from "path";
 
 export default async (sock, msg, args) => {
     const from = msg.key.remoteJid;
+    const sender = msg.sender;
     const amount = args[0] || "10";
     const myUpi = "08arun7@upi";
     const name = "arun•°Cumar";
     
-    // ഫയൽ പാത്തുകൾ
     const thumbPath = './media/thumb.jpg';
     const audioPath = './media/song.opus';
 
     try {
-        // 1. Reaction
+        // 1. Send Reaction
         await sock.sendMessage(from, { react: { text: "💰", key: msg.key } });
 
-        // UPI Link (Hide link format using Markdown)
-        const upiUrl = `upi://pay?pa=${myUpi}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR`;
-
+        // 2. Modern Professional Text Design (Standard Markdown)
         const donateText = `
-*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
+👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
 *⊹* 🪔 *ᴡʜᴀᴛꜱᴀᴘᴘ ᴍɪɴɪ ʙᴏᴛ*
 *✧* 「 \`👺Asura MD\` 」
 *╰─────────────────❂*
-*⊙⊙■ 👺 ASURA-MD DONATE ■⊙⊙*
+*───「 ASURA-MD SUPPORT 」───*
 
-*Hello,* @${msg.sender.split('@')[0]}
-Asura-MD-യുടെ വളർച്ചയെ സഹായിക്കാൻ ഒരു ചെറിയ തുക സംഭാവന ചെയ്യൂ. 🥰
+*👋🏻 Hello,* @${sender.split('@')[0]}
 
-*PAYMENT INFO*
-⊙━━━━━━━━━━⊙
- 👤 *Payee:* ${name}
- 💰 *Amount:* ₹${amount}
- 🆔 *UPI:* \`${myUpi}\`
-⊙━━━━━━━━━━⊙
+🔸️ If you appreciate this project, consider supporting its maintenance with a small donation.
 
-👉 *[CLICK HERE TO PAY](https://pay.upilink.in/pay/${myUpi}?am=${amount})*
+*🔑 ID:* #${Math.floor(1000 + Math.random() * 9000)}
+*📜 STATUS:* Pending Verification ✅
 
-> പണമടച്ച ശേഷം സ്ക്രീൻഷോട്ട് അയക്കുക. 👺`;
+*『 PAYMENT DETAILS 』*
+━━━━━━━━━━━━━━━━
+⊙ *🤑 Paye:* ${name}
+⊙ *🪙 Amount:* INR ${amount}.00
+⊙ *💳 UPI ID:* \`${myUpi}\`
+━━━━━━━━━━━━━━━━
 
-        // 2.  (song.opus)
+*🔗 QUICK PAYMENT LINK:*
+https://pay.upilink.in/pay/${myUpi}?am=${amount}
+
+> Please share the screenshot after successful payment. Thank you for your support! 👺
+
+*© ASURA MD | arun•°Cumar*`;
+
+        // 3. Send Voice Note (Optional Professional Touch)
         if (fs.existsSync(audioPath)) {
             await sock.sendMessage(from, { 
                 audio: fs.readFileSync(audioPath), 
-                mimetype: 'audio/ogg', 
+                mimetype: 'audio/ogg; codecs=opus', 
                 ptt: true 
             }, { quoted: msg });
         }
 
-        // 3. thumb.jpg 
+        // 4. Send Main Message with Image (High Compatibility Mode)
         await sock.sendMessage(from, {
             image: fs.existsSync(thumbPath) ? fs.readFileSync(thumbPath) : { url: 'https://files.catbox.moe/9e4b39.jpg' },
             caption: donateText,
-            mentions: [msg.sender],
+            mentions: [sender],
             contextInfo: {
+                // This part provides the "link preview" look but doesn't break the message if it fails
                 externalAdReply: {
-                    title: "ASURA MD PAYMENT SYSTEM",
-                    body: "Support & Donate",
+                    title: "ASURA MD - SECURE PAYMENT",
+                    body: "Support the development",
                     thumbnail: fs.existsSync(thumbPath) ? fs.readFileSync(thumbPath) : null,
                     sourceUrl: "https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24",
                     mediaType: 1,
+                    showAdAttribution: false,
                     renderLargerThumbnail: true
                 }
             }
         }, { quoted: msg });
 
     } catch (e) {
-        console.error('Donate Error:', e);
-        await sock.sendMessage(from, { text: `Error: ${e.message}` });
+        console.error('Donate Command Error:', e);
+        // Fallback to simple text if everything fails
+        await sock.sendMessage(from, { text: `Contact Admin for Payment: ${myUpi}` });
     }
 };
