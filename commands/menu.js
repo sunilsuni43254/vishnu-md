@@ -73,6 +73,13 @@ export default async (sock, msg, args) => {
 *⊹* 🪔 *ᴡʜᴀᴛꜱᴀᴘᴘ ᴍɪɴɪ ʙᴏᴛ*
 *✧* 「 👺Asura MD 」
 *╰────────────❂*
+*╭━❐━〔👺ASURA-MD〕━━⪼* 
+*├⊙ 👤 Owner:* ┊arun•°Cumar 
+*├⊙ 🛠️ STATUS:* Online
+*├⊙ 📦 Prefix:* . , ! #
+*├⊙ ⚙️ Mode:* Public
+*├⊙ 🏷️ Version:* v2.0
+*╰━❐━━━━━━━━━━━⪼*
 ╔━━━━━━━━━━❥❥❥
 ┃°☆°☆°☆°☆°☆°☆°☆°☆°
 ╠━━━━⛥❖⛥━━━❥❥❥
