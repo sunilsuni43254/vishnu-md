@@ -3,7 +3,14 @@ export default async (sock, msg, args) => {
         const sender = msg.key.participant || msg.key.remoteJid;
         const thumbPath = './media/thumb.jpg'; 
 
-        const donateText = `*〔 ASURA-MD INFRASTRUCTURE 〕*
+        const donateText = `
+*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
+*┊ ┊ ┊ ┊ ┊*
+*┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
+*┊ ☪︎⋆*
+*⊹* 🪔 *INFRASTRUCTURE*
+*✧* 「 👺Asura MD 」
+*╰────────────❂*
 
 *SYSTEM STATUS:* 🟢 Operational
 *REQUEST TYPE:* Donation / Maintenance Support
