@@ -37,7 +37,7 @@ export default async (sock, msg, args) => {
 ├⊙ 🚩 *Country:* ${data.Country}
 ├⊙ 💰 *Box Office:* ${data.BoxOffice || 'N/A'}
 ├⊙ 🏢 *Production:* ${data.Production || 'N/A'}
-├⊙ 🔗 *Watch Online:* https://vidsrc.to/embed/movie/${data.imdbID}
+├⊙ 🔗 *Watch Online:* https://vidsrcme.ru/embed/movie/${data.imdbID}
 ╰━❐━━━━━━━━━━━⪼
 © ASURA-MD 👺`;
 
