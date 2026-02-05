@@ -47,7 +47,7 @@ export default async (sock, msg, args) => {
             caption: movieInfo 
         }, { quoted: msg });
 
-        if (fs.existsSync('./Media/song.opus')) {
+        if (fs.existsSync('./media/song.opus')) {
             await sock.sendMessage(chat, { 
                 audio: { url: './media/song.opus' }, 
                 mimetype: 'audio/ogg', 
