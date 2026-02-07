@@ -134,7 +134,7 @@ async function startAsura() {
         const firstChar = body.charAt(0);
         const isCmd = prefixes.includes(firstChar);
 
-                  if (isCmd && body.length === 1) {
+                 if (isCmd && body.trim().length === 1) {
                   await sock.sendMessage(from, { 
                   text: "👺 *Asura-MD:* Please enter a command after the prefix (e.g., .menu) 🥰" 
                   }, { quoted: msg });
