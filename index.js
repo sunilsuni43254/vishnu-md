@@ -162,8 +162,9 @@ async function startAsura() {
                     console.log(`\x1b[31m[ERROR] -> ${commandName}.js missing 'export default'\x1b[0m`);
                 }
             } else {
-                console.log(`\x1b[31m[NOT FOUND] -> commands/${commandName}.js\x1b[0m`);
-            
+                console.log(`\x1b[31m[NOT FOUND] -> commands/${commandName}.js\x1b[0m`); 
+            } 
+                 
         } catch (err) {
             console.error("\x1b[31m[CRITICAL ERROR]\x1b[0m", err);
         }
