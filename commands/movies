@@ -1,4 +1,4 @@
-import { Api, TelegramClient } from "gramjs";
+import { Api, TelegramClient } from "telegram";
 import { StringSession } from "gramjs/sessions";
 
 // ടെലിഗ്രാം സെറ്റിംഗ്സ്
