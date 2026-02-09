@@ -22,41 +22,36 @@ export default async (sock, msg, args) => {
             isStarted = true;
         }
 
-        if (text === '.tv' || text === '.music') {
-            await sock.sendMessage(from, { text: "🔊 *Asura MD Database...*" });
+        if (text === '.audio' || text === '.music') {
+            await sock.sendMessage(from, { text: "🔍 *Searching in Asura DB...*" });
 
-            const randomOffset = Math.floor(Math.random() * 500); 
+            const randomOffset = Math.floor(Math.random() * 100);
 
+            // ബോട്ടുകൾക്ക് അനുവദനീയമായ സെർച്ച് മെത്തേഡ്
             const result = await client.invoke(
-                new Api.messages.GetHistory({
+                new Api.messages.Search({
                     peer: channelId,
-                    limit: 100, // 100 മെസേജുകൾ എടുക്കുന്നു
-                    addOffset: randomOffset 
+                    filter: new Api.InputMessagesFilterMusic(), 
+                    q: "", 
+                    limit: 50,
+                    offsetId: 0,
+                    addOffset: randomOffset
                 })
             );
 
-            // എല്ലാ ഓഡിയോ ഫയലുകളും (Music & Voice) ഫിൽട്ടർ ചെയ്യുന്നു
-            const allAudios = result.messages.filter(m => 
-                m.media && (m.media instanceof Api.MessageMediaDocument) && 
-                m.media.document.mimeType.includes('audio')
-            );
+            const allAudios = result.messages;
 
-            if (allAudios.length === 0) {
-                return sock.sendMessage(from, { text: "❌ *error!*" });
+            if (!allAudios || allAudios.length === 0) {
+                return sock.sendMessage(from, { text: "❌ *No audio found!*" });
             }
 
-            // വീണ്ടും ഒരു ഷഫിൾ കൂടി നടത്തുന്നു
             const shuffled = allAudios.sort(() => 0.5 - Math.random()).slice(0, 15);
             audioCache.set(sender, shuffled);
 
-            let listMsg = `╭〔 *👺 ASURA MD* 〕─\n`;
-            listMsg += `│ 🎧 *Status:* Old & New Hits\n`;
-            listMsg += `│ 🎵 *Total:* ${shuffled.length} Tracks\n`;
-            listMsg += `╰──────────────\n\n`;
-
+            let listMsg = `*👺 ASURA MD audio DB*\n\n`;
             shuffled.forEach((m, index) => {
                 const attr = m.media.document.attributes.find(a => a instanceof Api.DocumentAttributeAudio);
-                const title = attr?.title || m.media.document.attributes.find(a => a instanceof Api.DocumentAttributeFilename)?.fileName || "Unknown Track";
+                const title = attr?.title || "Unknown Track";
                 listMsg += `*${index + 1}* ➠ ${title}\n\n`;
             });
 
@@ -64,45 +59,34 @@ export default async (sock, msg, args) => {
             return await sock.sendMessage(from, { text: listMsg }, { quoted: msg });
         }
 
-        // --- ഡൗൺലോഡ് ലോജിക് ---
+        // പ്ലേ ചെയ്യാനുള്ള ലോജിക്
         const quotedMsg = msg.message?.extendedTextMessage?.contextInfo;
         if (quotedMsg && quotedMsg.quotedMessage && !isNaN(text)) {
             const quotedText = quotedMsg.quotedMessage.conversation || quotedMsg.quotedMessage.extendedTextMessage?.text || "";
             
-            if (quotedText.includes("ASURA MD Audio")) {
+            if (quotedText.includes("ASURA MD")) {
                 const index = parseInt(text) - 1;
                 const userFiles = audioCache.get(sender);
 
                 if (!userFiles || !userFiles[index]) return;
 
                 const selected = userFiles[index];
-                const doc = selected.media.document;
-                
-                const audioAttr = doc.attributes.find(a => a instanceof Api.DocumentAttributeAudio);
-                const fileName = `${audioAttr?.title || 'Asura_Music'}.mp3`;
+                await sock.sendMessage(from, { text: `⚡ *Fetching audio...*` }, { quoted: msg });
 
-                await sock.sendMessage(from, { text: `⚡ *Streaming from DB...*` }, { quoted: msg });
-
-                const buffer = await client.downloadMedia(selected.media, { workers: 16 });
+                // വാട്സാപ്പിലേക്ക് അയക്കാൻ മീഡിയ ഡൗൺലോഡ് ചെയ്ത് ബഫർ എടുക്കണം
+                const buffer = await client.downloadMedia(selected.media, { workers: 4 });
+                const attr = selected.media.document.attributes.find(a => a instanceof Api.DocumentAttributeAudio);
 
                 await sock.sendMessage(from, {
                     audio: buffer,
                     mimetype: "audio/mpeg",
-                    fileName: fileName,
-                    ptt: false,
-                    contextInfo: {
-                        externalAdReply: {
-                            title: audioAttr?.title || "Asura MD Audio",
-                            body: "👺 Streaming from Private DB",
-                            mediaType: 1,
-                            showAdAttribution: true
-                        }
-                    }
+                    fileName: `${attr?.title || 'Asura'}.mp3`,
+                    header: attr?.title || "Asura Music"
                 }, { quoted: msg });
             }
         }
 
     } catch (error) {
-        console.error("Error:", error);
+        console.error("Error Log:", error);
     }
 };
