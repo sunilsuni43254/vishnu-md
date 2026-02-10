@@ -8,7 +8,7 @@ export default async (sock, msg, args) => {
   const searchQuery = args.join(" ");
 
   if (!searchQuery) {
-    return sock.sendMessage(chat, { text: "❌ Usage: *.song* [song name/link]" });
+    return sock.sendMessage(chat, { text: "❌ Usage: *.audio* [song name/link]" });
   }
 
   try {
@@ -23,7 +23,7 @@ export default async (sock, msg, args) => {
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
-*⊹* 🪔 *Song Download*
+*⊹* 🪔 *Audio Download*
 *✧* 「 \`👺Asura MD\` 」
 *╰───────────❂*
 ╭•°•❲ *Streaming...* ❳•°•
