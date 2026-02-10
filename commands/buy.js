@@ -1,71 +1,60 @@
-import axios from 'axios';
+import https from 'https';
 
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
-    const query = args.join(' ');
-
-    if (!query) {
-        return await sock.sendMessage(chat, { text: "🛍️ *Usage:* `.buy [product name]`\n_Example: .buy boat earphones_" }, { quoted: msg });
-    }
+    const query = args.join(' ') || 'headphones';
 
     await sock.sendPresenceUpdate('composing', chat);
 
-    try {
-        // കുറഞ്ഞ വിലയിലുള്ള സാധനങ്ങൾക്കായി ഗൂഗിൾ ഷോപ്പിംഗ് സെർച്ച് ഉപയോഗിക്കുന്നു
-        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}+price+low+to+high&tbm=shop`;
+    // eBay official RSS search
+    const url = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_rss=1`;
 
-        const { data } = await axios.get(searchUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    https.get(url, (res) => {
+        let data = '';
+
+        res.on('data', chunk => data += chunk);
+
+        res.on('end', async () => {
+            try {
+                const items = data.match(/<item>([\s\S]*?)<\/item>/g);
+
+                if (!items) {
+                    return sock.sendMessage(chat, { text: "❌ No products found." }, { quoted: msg });
+                }
+
+                let text = `🛍️ *BEST PRODUCTS FOR:* _${query}_\n\n`;
+
+                for (let i = 0; i < Math.min(2, items.length); i++) {
+                    const item = items[i];
+
+                    const title = item.match(/<title>(.*?)<\/title>/)?.[1];
+                    const link = item.match(/<link>(.*?)<\/link>/)?.[1];
+                    const price = item.match(/<g:price>(.*?)<\/g:price>/)?.[1] || "Check site";
+                    const img = item.match(/<media:content url="(.*?)"/)?.[1];
+
+                    text += `*${i + 1}. ${title}*\n`;
+                    text += `💰 Price: ${price}\n`;
+                    text += `🔗 ${link}\n\n`;
+
+                    // First item image thumbnail preview
+                    if (i === 0 && img) {
+                        await sock.sendMessage(chat, {
+                            image: { url: img },
+                            caption: text
+                        }, { quoted: msg });
+
+                        return;
+                    }
+                }
+
+                await sock.sendMessage(chat, { text }, { quoted: msg });
+
+            } catch (err) {
+                sock.sendMessage(chat, { text: "❌ Error parsing products." }, { quoted: msg });
             }
         });
 
-        // Product Details Extract ചെയ്യുന്നു (Regex)
-        const titles = data.match(/<div class="rgna">([\s\S]*?)<\/div>/g) || [];
-        const prices = data.match(/<span class="HRLx9c">([\s\S]*?)<\/span>/g) || [];
-        const links = data.match(/<a href="\/url\?q=([\s\S]*?)"/g) || [];
-
-        if (titles.length === 0) {
-            return await sock.sendMessage(chat, { text: "❌ Please try again later." }, { quoted: msg });
-        }
-
-        let buyMsg = `*👺 Asura MD Smart Buyer* 🛍️\n`;
-        buyMsg += `*Found best deals for:* _${query}_\n\n`;
-
-        // ആദ്യത്തെ 3 മികച്ച ഡീലുകൾ കാണിക്കുന്നു
-        for (let i = 0; i < Math.min(titles.length, 3); i++) {
-            let title = titles[i].replace(/<[^>]+>/g, '').trim();
-            let price = prices[i] ? prices[i].replace(/<[^>]+>/g, '').trim() : "Price Not Available";
-            let rawLink = links[i].match(/\/url\?q=(.*?)&amp;/)?.[1] || "";
-            let link = decodeURIComponent(rawLink);
-
-            buyMsg += `*${i + 1}. ${title}*\n`;
-            buyMsg += `💰 *Price:* ${price}\n`;
-            buyMsg += `🔗 *Buy Now:* ${link}\n\n`;
-        }
-
-        buyMsg += `> *Note: Prices may change based on site offers.*\n> *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
-
-        // Modern Design Thumbnail
-        await sock.sendMessage(chat, { 
-            text: buyMsg,
-            contextInfo: {
-                externalAdReply: {
-                    title: `🔥 BEST DEALS FOUND: ${query.toUpperCase()}`,
-                    body: "Low price product bug search enabled! ✅",
-                    mediaType: 1,
-                    thumbnailUrl: "https://i.pinimg.com/736x/87/42/1d/87421d01f603a1103c8008a096c43c8d.jpg", 
-                    sourceUrl: "https://www.google.com/shopping", 
-                    showAdAttribution: false,
-                    renderLargerThumbnail: true 
-                }
-            }
-        }, { quoted: msg });
-
-        await sock.sendMessage(chat, { react: { text: "💰", key: msg.key } });
-
-    } catch (e) {
-        console.error("Buy Error:", e.message);
-        await sock.sendMessage(chat, { text: "❌ Server Error." }, { quoted: msg });
-    }
+    }).on('error', () => {
+        sock.sendMessage(chat, { text: "❌ RSS Server error." }, { quoted: msg });
+    });
 };
