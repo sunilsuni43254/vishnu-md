@@ -1,66 +1,79 @@
 import axios from 'axios';
 
+function extract(tag, text) {
+    return text.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`))?.[1] || "";
+}
+
+function clean(txt = "") {
+    return txt
+        .replace(/<[^>]+>/g, '')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
     await sock.sendPresenceUpdate('composing', chat);
 
     try {
-        const query = args.length > 0 ? args.join(' ') : 'India';
+        const query = args.length ? args.join(' ') : 'India';
         const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN:en`;
 
-        const response = await axios.get(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-                'Accept': 'application/xml, text/xml, */*'
-            },
-            timeout: 6000
+        const { data } = await axios.get(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 8000
         });
 
-        const data = response.data;
         const items = data.match(/<item>([\s\S]*?)<\/item>/g);
-
-        if (!items || items.length === 0) {
-            return await sock.sendMessage(chat, { text: `❌ No news found for: ${query}` }, { quoted: msg });
+        if (!items) {
+            return sock.sendMessage(chat, { text: `❌ No news for ${query}` }, { quoted: msg });
         }
-
-        let newsMsg = `*📰 LATEST NEWS — ${query.toUpperCase()}*\n\n`;
 
         for (let i = 0; i < Math.min(items.length, 5); i++) {
             const item = items[i];
 
-            let title = item.match(/<title>([\s\S]*?)<\/title>/)?.[1] || "No Title";
-            let source = item.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1] || "News Source";
-            let pubDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || "";
-            let description = item.match(/<description>([\s\S]*?)<\/description>/)?.[1] || "";
+            let title = clean(extract('title', item).split(' - ')[0]);
+            let link = extract('link', item);
+            let source = clean(extract('source', item));
+            let pubDate = extract('pubDate', item);
+            let description = clean(extract('description', item));
 
-            // Clean title
-            title = title.split(' - ')[0];
+            // 🖼️ image from media tags
+            let image =
+                item.match(/<media:content[^>]*url="([^"]+)"/)?.[1] ||
+                item.match(/<media:thumbnail[^>]*url="([^"]+)"/)?.[1] ||
+                null;
 
-            // Clean HTML entities
-            const clean = (txt) =>
-                txt.replace(/<[^>]+>/g, '')
-                   .replace(/&amp;/g, '&')
-                   .replace(/&quot;/g, '"')
-                   .replace(/&#39;/g, "'")
-                   .trim();
+            const caption =
+`📰 *${title}*
 
-            title = clean(title);
-            description = clean(description);
+🗞 _${source}_
+🕒 ${new Date(pubDate).toLocaleString()}
 
-            newsMsg += `*${i + 1}. ${title}*\n`;
-            newsMsg += `🗞 _${source}_\n`;
-            if (pubDate) newsMsg += `🕒 ${new Date(pubDate).toLocaleString()}\n\n`;
-            newsMsg += `📄 ${description}\n\n`;
-            newsMsg += `──────────────────\n\n`;
+📄 ${description}
+
+🔗 Read more:
+${link}
+
+> © 👺 Asura MD News`;
+
+            if (image) {
+                await sock.sendMessage(chat, {
+                    image: { url: image },
+                    caption
+                }, { quoted: msg });
+            } else {
+                await sock.sendMessage(chat, { text: caption }, { quoted: msg });
+            }
         }
 
-        newsMsg += `> © 👺 Asura MD News`;
-
-        await sock.sendMessage(chat, { text: newsMsg }, { quoted: msg });
         await sock.sendMessage(chat, { react: { text: "📰", key: msg.key } });
 
     } catch (e) {
-        console.error("News Error:", e.message);
-        await sock.sendMessage(chat, { text: "❌ News Server busy. Try again later." }, { quoted: msg });
+        console.log(e);
+        await sock.sendMessage(chat, { text: "❌ News fetch failed. Try later." }, { quoted: msg });
     }
 };
