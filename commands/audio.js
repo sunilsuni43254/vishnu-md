@@ -54,47 +54,42 @@ export default async (sock, msg, args) => {
 
         const rawAudioUrl = await getAudioUrl(video.url);
         
-        const tempMp3 = `./${Date.now()}.mp3`;
-        const tempOpus = `./${Date.now()}.opus`;
+        const inputMp3 = `./${Date.now()}_in.mp3`;
+        const outputMp3 = `./${Date.now()}_out.mp3`;
+        const outputOpus = `./${Date.now()}.opus`;
 
-        // Download MP3 Buffer
+        // 1. Download the raw file
         const response = await axios.get(rawAudioUrl, { responseType: 'arraybuffer' });
-        const audioBuffer = Buffer.from(response.data);
-
-        // 1. Send as Audio File (Playable)
-        await sock.sendMessage(chat, {
-            audio: audioBuffer,
-            mimetype: 'audio/mp4', 
-            ptt: false 
-        }, { quoted: msg });
-
-        // Write to temp file for FFmpeg conversion
-        fs.writeFileSync(tempMp3, audioBuffer);
-
-        // 2. Convert to Voice Note (PTT) - Important: Added -vn and -af
-        exec(`ffmpeg -i ${tempMp3} -vn -acodec libopus -ab 128k -ar 48000 -f opus ${tempOpus}`, async (err) => {
-            if (err) {
-                console.error('FFmpeg Error:', err);
-                if (fs.existsSync(tempMp3)) fs.unlinkSync(tempMp3);
-                return;
-            }
-
-            if (fs.existsSync(tempOpus)) {
+        fs.writeFileSync(inputMp3, Buffer.from(response.data));
+        
+        exec(`ffmpeg -i ${inputMp3} -map 0:a -codec:a libmp3lame -q:a 2 ${outputMp3}`, async (err) => {
+            if (!err && fs.existsSync(outputMp3)) {
                 await sock.sendMessage(chat, {
-                    audio: fs.readFileSync(tempOpus),
-                    mimetype: 'audio/ogg; codecs=opus',
-                    ptt: true 
+                    audio: fs.readFileSync(outputMp3),
+                    mimetype: 'audio/mpeg',
+                    ptt: false 
                 }, { quoted: msg });
-
-                // Cleanup
-                fs.unlinkSync(tempMp3);
-                fs.unlinkSync(tempOpus);
-                await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
+                fs.unlinkSync(outputMp3);
             }
+
+            // 3. Create Voice Note (PTT Fix)
+            exec(`ffmpeg -i ${inputMp3} -vn -ac 1 -acodec libopus -b:a 128k -ar 48000 ${outputOpus}`, async (err) => {
+                if (!err && fs.existsSync(outputOpus)) {
+                    await sock.sendMessage(chat, {
+                        audio: fs.readFileSync(outputOpus),
+                        mimetype: 'audio/ogg; codecs=opus',
+                        ptt: true 
+                    }, { quoted: msg });
+
+                    // Final Cleanup
+                    if (fs.existsSync(inputMp3)) fs.unlinkSync(inputMp3);
+                    if (fs.existsSync(outputOpus)) fs.unlinkSync(outputOpus);
+                    await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
+                }
+            });
         });
 
     } catch (e) {
-        console.error("Audio Play Error:", e);
-        await sock.sendMessage(chat, { text: "❌ Error: Could not process audio." }, { quoted: msg });
+        console.error("Error:", e);
     }
 };
