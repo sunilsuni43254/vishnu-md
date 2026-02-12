@@ -73,21 +73,25 @@ export default async (sock, msg, args) => {
             }
 
             // 3. Create Voice Note (PTT Fix)
-            exec(`ffmpeg -i ${inputMp3} -vn -ac 1 -acodec libopus -b:a 128k -ar 48000 ${outputOpus}`, async (err) => {
-                if (!err && fs.existsSync(outputOpus)) {
-                    await sock.sendMessage(chat, {
-                        audio: fs.readFileSync(outputOpus),
-                        mimetype: 'audio/ogg; codecs=opus',
-                        ptt: true 
-                    }, { quoted: msg });
+           exec(`ffmpeg -i ${inputMp3} -vn -ac 1 -c:a libopus -b:a 64k -application voip -ar 48000 ${outputOpus}`, async (err) => {
+             if (err) {
+                console.error('FFmpeg PTT Error:', err);
+            return;
+         }
 
-                    // Final Cleanup
-                    if (fs.existsSync(inputMp3)) fs.unlinkSync(inputMp3);
-                    if (fs.existsSync(outputOpus)) fs.unlinkSync(outputOpus);
-                    await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
-                }
-            });
-        });
+               if (fs.existsSync(outputOpus)) {
+                 await sock.sendMessage(chat, {
+                 audio: fs.readFileSync(outputOpus),
+                 mimetype: 'audio/ogg; codecs=opus',
+                 ptt: true 
+             }, { quoted: msg });
+
+        // cleaning 
+                fs.unlinkSync(inputMp3);
+                fs.unlinkSync(outputOpus);
+                await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
+              }
+         });
 
     } catch (e) {
         console.error("Error:", e);
