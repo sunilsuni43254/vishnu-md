@@ -74,17 +74,6 @@ const inputMp3 = `./in_${Date.now()}.mp3`;
             fs.unlinkSync(outputMp3);
         }
 
-        // 2. Voice Note (PTT) 
-        await execPromise(`ffmpeg -i ${inputMp3} -vn -ac 1 -c:a opus -b:a 64k -application voip -ar 48000 ${outputOpus}`);
-        if (fs.existsSync(outputOpus)) {
-            await sock.sendMessage(chat, {
-                audio: fs.readFileSync(outputOpus),
-                mimetype: 'audio/ogg; codecs=opus',
-                ptt: true 
-            }, { quoted: msg });
-            fs.unlinkSync(outputOpus);
-        }
-
         await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
 
     } catch (e) {
