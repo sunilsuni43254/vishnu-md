@@ -64,8 +64,8 @@ export default async (sock, msg, args) => {
         const response = await axios.get(rawAudioUrl, { responseType: 'arraybuffer' });
         fs.writeFileSync(inputMp3, Buffer.from(response.data));
 
-        // --- 1. SEND AUDIO FILE ---
-await execPromise(`ffmpeg -i ${inputMp3} -map 0:a -codec:a libmp3lame -q:a 2 ${outputMp3}`);
+ // --- 1. SEND AUDIO FILE ---
+await execPromise(`${ffmpegPath} -i ${inputMp3} -map 0:a -codec:a libmp3lame -q:a 2 ${outputMp3}`);
 if (fs.existsSync(outputMp3)) {
     await sock.sendMessage(chat, {
         audio: fs.readFileSync(outputMp3),
@@ -76,7 +76,7 @@ if (fs.existsSync(outputMp3)) {
 }
 
 // --- 2. SEND VOICE NOTE (PTT) ---
-await execPromise(`ffmpeg -i ${inputMp3} -vn -ac 1 -c:a libopus -b:a 64k -vbr on -ar 48000 -f opus ${outputOpus}`);
+await execPromise(`${ffmpegPath} -i ${inputMp3} -vn -ac 1 -c:a libopus -b:a 64k -vbr on -ar 48000 -f opus ${outputOpus}`);
 if (fs.existsSync(outputOpus)) {
     await sock.sendMessage(chat, {
         audio: fs.readFileSync(outputOpus),
@@ -85,7 +85,7 @@ if (fs.existsSync(outputOpus)) {
     }, { quoted: msg });
     fs.unlinkSync(outputOpus);
 }
-
+        
         await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
 
     } catch (e) {
