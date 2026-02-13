@@ -5,7 +5,7 @@ import ffmpeg from 'fluent-ffmpeg';
 
 //Direct youtube 
 const getAudioUrl = async (url) => {
-    const headers = { 'Referer': 'https://id.ytmp3.mobi/v1/' };
+    const headers = { 'Referer': 'https://id.ytmp3.mobi/' };
     const videoID = url.includes('youtu.be') ? url.split('/').pop() : new URL(url).searchParams.get('v');
     const { data: initData } = await axios.get(`https://d.ymcdn.org/api/v1/init?p=y&23=1llum1n471&_=${Math.random()}`, { headers });
     const urlParam = { v: videoID, f: 'mp3', _: Math.random() };
@@ -59,20 +59,30 @@ export default async (sock, msg, args) => {
         // 3. streaming 
         const rawAudioUrl = await getAudioUrl(video.url);
 
-    const response = await axios.get(rawAudioUrl, { responseType: 'arraybuffer' });
+    const response = await axios.get(rawAudioUrl, { 
+            responseType: 'arraybuffer',
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+            maxContentLength: Infinity,
+        });
+
         const audioBuffer = Buffer.from(response.data);
 
-        // 3. Regular Audio File (MP3) 
-        await sock.sendMessage(chat, {
-            audio: audioBuffer,
-            mimetype: 'audio/mpeg',fileName: `${video.title}.mp3`
-            ptt: false 
-        }, { quoted: msg });
-
-        await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
+        // ഓഡിയോ അയക്കുന്നു
+        if (audioBuffer.length > 0) {
+            await sock.sendMessage(chat, {
+                audio: audioBuffer,
+                mimetype: 'audio/mpeg',
+                fileName: `${video.title}.mp3`
+            }, { quoted: msg });
+            
+            await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
+        } else {
+            throw new Error("EMPTY_BUFFER");
+        }
 
     } catch (e) {
         console.error("Audio Play Error:", e);
         await sock.sendMessage(chat, { text: "❌ error" }, { quoted: msg });
     }
 };
+
