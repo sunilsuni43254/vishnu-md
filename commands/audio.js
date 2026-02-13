@@ -21,9 +21,9 @@ export default async (sock, msg, args) => {
 
     if (!query) return sock.sendMessage(chat, { text: "❌ .audio name/link !" }, { quoted: msg });
 
-const inputMp3 = `./in_${Date.now()}.mp3`;
+    const inputMp3 = `./in_${Date.now()}.mp3`;
     const outputMp3 = `./out_${Date.now()}.mp3`;
-    const outputOpus = `./out_${Date.now()}.ogg`;
+    const outputOpus = `./out_${Date.now()}.opus`;
 
 
     try {
@@ -65,7 +65,7 @@ const inputMp3 = `./in_${Date.now()}.mp3`;
         fs.writeFileSync(inputMp3, Buffer.from(response.data));
 
         // --- 1. SEND AUDIO FILE ---
-await execPromise(`${ffmpegPath} -i ${inputMp3} -map 0:a -codec:a libmp3lame -q:a 2 ${outputMp3}`);
+await execPromise(`ffmpeg -i ${inputMp3} -map 0:a -codec:a libmp3lame -q:a 2 ${outputMp3}`);
 if (fs.existsSync(outputMp3)) {
     await sock.sendMessage(chat, {
         audio: fs.readFileSync(outputMp3),
@@ -76,7 +76,7 @@ if (fs.existsSync(outputMp3)) {
 }
 
 // --- 2. SEND VOICE NOTE (PTT) ---
-await execPromise(`${ffmpegPath} -i ${inputMp3} -vn -ac 1 -c:a libopus -b:a 64k -application voip -ar 48000 ${outputOpus}`);
+await execPromise(`ffmpeg -i ${inputMp3} -vn -ac 1 -c:a libopus -b:a 64k -vbr on -ar 48000 -f opus ${outputOpus}`);
 if (fs.existsSync(outputOpus)) {
     await sock.sendMessage(chat, {
         audio: fs.readFileSync(outputOpus),
