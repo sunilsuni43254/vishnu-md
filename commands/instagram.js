@@ -5,45 +5,46 @@ export default async (sock, msg, args) => {
     let query = args.join(' ');
 
     if (!query) {
-        return sock.sendMessage(chat, { text: "❌ Example: `.Instagram [Instagram-Link]`" }, { quoted: msg });
+        return sock.sendMessage(chat, { text: "❌ Example: .Instagram <link> OR .Instagram <search name>" }, { quoted: msg });
     }
 
     try {
         await sock.sendMessage(chat, { react: { text: "⏳", key: msg.key } });
 
+        let url = query;
+
+        // 1. SEARCH LOGIC
         if (!query.includes('instagram.com')) {
-             return sock.sendMessage(chat, { text: "⚠️ Please provide a valid Instagram link!" }, { quoted: msg });
+            const searchRes = await axios.get(`https://www.google.com/search?q=site:instagram.com+${encodeURIComponent(query)}`);
+            const match = searchRes.data.match(/https:\/\/www\.instagram\.com\/(?:p|reels|reel)\/[a-zA-Z0-9_-]+/);
+            
+            if (!match) return sock.sendMessage(chat, { text: "❌ No results found on Instagram for this search!" }, { quoted: msg });
+            url = match[0];
         }
 
-        const params = new URLSearchParams();
-        params.append('url', query);
-        params.append('lang', 'en');
-
-        // Scraping from saveclip.app
-        const response = await axios.post('https://saveclip.app/api/ajaxSearch', params, {
+        // 2. SCRAPING LOGIC (evoig.com)
+        const config = {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
             }
-        });
+        };
 
-        const htmlData = response.data.data; 
-        if (!htmlData) throw new Error("Invalid Response");
+        const params = new URLSearchParams();
+        params.append('url', url);
+        params.append('lang', 'en');
 
-        // link finding 
-        const dlMatch = htmlData.match(/href=\\"(https:\/\/.*?)\\"/);
-        const thumbMatch = htmlData.match(/src=\\"(https:\/\/.*?)\\"/);
+        const { data } = await axios.post('https://saveclip.app/en/api/ajaxSearch', params, config);
 
-        if (!dlMatch) throw new Error("Private or Broken link");
+        // Finding media link and thumbnail
+        const dlUrl = data.data.match(/href="([^"]+)"/)[1];
+        const thumbMatch = data.data.match(/src="([^"]+)"/);
+        const thumb = thumbMatch ? thumbMatch[1] : 'https://i.imgur.com/your_default.jpg';
+        const title = "Asura MD Search Result";
 
-        const dlUrl = dlMatch[1].replace(/\\/g, '');
-        const thumb = thumbMatch ? thumbMatch[1].replace(/\\/g, '') : '';
-
+        // Buffer download
         const mediaRes = await axios.get(dlUrl, { responseType: 'arraybuffer' });
         const buffer = Buffer.from(mediaRes.data);
-        
-        // video checking
-        const isVideo = dlUrl.includes('.mp4') || dlUrl.includes('video');
 
         // Design 
         const caption = `*👺⃝⃘̉̉━━━━━━━━━━━◆◆◆*
@@ -54,11 +55,11 @@ export default async (sock, msg, args) => {
 *✧* 「 \`👺Asura MD\` 」
 *╰─────────────────❂*
 ╭•°•❲ *Downloading...* ❳•°•
- ⊙🎬 *TITLE:* ${query.substring(0, 15)}...
+ ⊙🎬 *TITLE:* ${title}
 ╰━━━━━━━━━━━━━━┈⊷
  ⊙📺 *SOURCE:* Instagram
 ╰━━━━━━━━━━━━━━┈⊷
- ⊙👀 *TYPE:* ${isVideo ? 'Video' : 'Image'}
+ ⊙👀 *TYPE:* Video/Image
 ╰━━━━━━━━━━━━━━┈⊷
  ⊙⏳ *STATUS:* Success ✅
 ╰━━━━━━━━━━━━━━┈⊷
@@ -66,6 +67,9 @@ export default async (sock, msg, args) => {
 ╰╌╌╌╌╌╌╌╌╌╌╌╌࿐
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
 > *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
+
+     //Image
+        const isVideo = dlUrl.includes('.mp4') || dlUrl.includes('fbcdn.net');
 
         if (isVideo) {
             await sock.sendMessage(chat, {
