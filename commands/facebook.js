@@ -2,68 +2,67 @@ import axios from 'axios';
 
 export default async (sock, msg, args) => {
     const chat = msg.key.remoteJid;
-    const url = args[0];
+    const query = args.join(" ");
 
-    if (!url) return sock.sendMessage(chat, { text: "⚠️ Please provide a Facebook link! *Example: .facebook link*" }, { quoted: msg });
+    if (!query) return sock.sendMessage(chat, { text: "⚠️ Example: .facebook name/link" }, { quoted: msg });
 
     try {
-        await sock.sendMessage(chat, { react: { text: "📥", key: msg.key } });
+        await sock.sendMessage(chat, { react: { text: "🔍", key: msg.key } });
 
-        // Fdownloader API Request
-        const response = await axios.post('https://snapvid.net/en/facebook-downloader/api/ajaxSearch', 
-            new URLSearchParams({ 'q': url, 'vt': 'facebook' }), 
-            {
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                }
+        let videoUrl = "";
+        let title = "Facebook Media";
+
+        // 1.searching
+        if (!query.includes("facebook.com") && !query.includes("fb.watch")) {
+            
+            const searchRes = await axios.get(`https://www.google.com/search?q=site:facebook.com+video+${encodeURIComponent(query)}`);
+            const linkMatch = searchRes.data.match(/https:\/\/www\.facebook\.com\/watch\/\?v=\d+/);
+            
+            if (linkMatch) {
+                videoUrl = linkMatch[0];
+            } else {
+                return sock.sendMessage(chat, { text: "❌ notfound." }, { quoted: msg });
             }
+        } else {
+            videoUrl = query;
+        }
+
+        // 2. ഡൗൺലോഡ് ലോജിക് (FDownloader Scraper - No API)
+        const scrapRes = await axios.post('https://fdownloader.net/api/ajaxSearch', 
+            new URLSearchParams({ 'q': videoUrl, 'vt': 'facebook' }), 
+            { headers: { 'User-Agent': 'Mozilla/5.0' } }
         );
 
-        const data = response.data.data;
-        
-        // ലിങ്കുകൾ കണ്ടുപിടിക്കുന്നു (Video/Photo)
-        const videoMatch = data.match(/href=\\"(https:\/\/.*?\.mp4.*?)\\"/);
-        const photoMatch = data.match(/href=\\"(https:\/\/.*?\.jpg.*?)\\"/); // ഫോട്ടോകൾ ഉണ്ടെങ്കിൽ
-        const titleMatch = data.match(/<h3 class=\\"title\\">(.*?)<\/h3>/);
+        const dlMatch = scrapRes.data.data.match(/href=\\"(https:\/\/.*?\.mp4.*?)\\"/);
+        if (!dlMatch) throw new Error("Link Expired or Private");
 
-        const title = titleMatch ? titleMatch[1] : "Facebook Media";
-        let dlUrl = videoMatch ? videoMatch[1].replace(/\\/g, '') : (photoMatch ? photoMatch[1].replace(/\\/g, '') : null);
+        const finalDlUrl = dlMatch[1].replace(/\\/g, '');
+        const mediaRes = await axios.get(finalDlUrl, { responseType: 'arraybuffer' });
+        const buffer = Buffer.from(mediaRes.data);
 
-        if (!dlUrl) throw new Error("Media link not found");
-
-        // ബഫർ ലോജിക്
-        const mediaResponse = await axios.get(dlUrl, { responseType: 'arraybuffer' });
-        const buffer = Buffer.from(mediaResponse.data, 'utf-8');
-
-        // Caption Design
+        // 3. ഡിസൈൻ
+        const date = new Date().toLocaleDateString();
         const caption = `*👺⃝⃘̉̉━━━━━━━━━━━◆◆◆*
 *┊ ┊ ┊ ┊ ┊*
 *┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
 *┊ ☪︎⋆*
-*⊹* 🪔 *Facebook Media*
+*⊹* 🪔 *FB Search & Download*
 *✧* 「 \`👺Asura MD\` 」
 *╰─────────────────❂*
-╭•°•❲ *Downloading...* ❳•°•
- ⊙🎬 *TITLE:* ${title}
-╰━━━━━━━━━━━━━━┈⊷
+╭•°•❲ *Processing...* ❳•°•
+ ⊙🎬 *TITLE:* ${query.substring(0, 20)}...
  ⊙📺 *SOURCE:* Facebook
-╰━━━━━━━━━━━━━━┈⊷
- ⊙👀 *TYPE:* Photo/Video/Reels
-╰━━━━━━━━━━━━━━┈⊷
- ⊙⏳ *STATUS:* Success
+ ⊙⏳ *DATE:* ${date}
 ╰━━━━━━━━━━━━━━┈⊷
 *◀︎ •၊၊||၊||||။‌‌‌‌၊||••*
 ╰╌╌╌╌╌╌╌╌╌╌╌╌࿐
-> 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
-> *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*`;
+> *© ᴄʀᴇᴀᴛᴇഡി ʙʏ 👺Asura MD*`;
 
-        // identify Media type
-        if (dlUrl.includes('.mp4')) {
-            await sock.sendMessage(chat, { video: buffer, caption: caption, mimetype: 'video/mp4' }, { quoted: msg });
-        } else {
-            await sock.sendMessage(chat, { image: buffer, caption: caption }, { quoted: msg });
-        }
+        await sock.sendMessage(chat, {
+            video: buffer,
+            caption: caption,
+            mimetype: 'video/mp4'
+        }, { quoted: msg });
 
         await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
 
