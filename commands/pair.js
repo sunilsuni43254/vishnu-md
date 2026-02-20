@@ -1,166 +1,132 @@
-import pkg from "@whiskeysockets/baileys";
+import { 
+    makeWASocket, 
+    useMultiFileAuthState, 
+    fetchLatestBaileysVersion, 
+    makeInMemoryStore,
+    DisconnectReason 
+} from "@whiskeysockets/baileys";
+import pino from "pino";
 import fs from "fs";
 import path from "path";
-import pino from "pino";
+import { pathToFileURL } from 'url';
 
-const { makeWASocket, useMultiFileAuthState, delay, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } = pkg;
+// മെമ്മറി സ്പീഡ് കൂട്ടാൻ സ്റ്റോർ ഉപയോഗിക്കുന്നു
+const store = makeInMemoryStore({ logger: pino().child({ level: 'silent', stream: 'store' }) });
 
-const subBots = new Map();
+export default async function pairCommand(sock, msg, args) {
+    const remoteJid = msg.key.remoteJid;
+    const phoneNumber = args[0]?.replace(/[^0-9]/g, '');
 
-// Helper to cleanup sub-bot after 24 hours
-async function scheduleCleanup(number, tempSock, subSessionPath) {
-    setTimeout(async () => {
-        if (subBots.has(number)) {
-            try {
-                await tempSock.logout();
-            } catch {}
-            subBots.delete(number);
-            fs.rmSync(subSessionPath, { recursive: true, force: true });
-            console.log(`[INFO] Sub-bot ${number} session removed.`);
-        }
-    }, 24 * 60 * 60 * 1000); // 24 hours
-}
-
-// Load commands dynamically
-const commands = new Map();
-
-async function loadCommands() {
-    const files = fs.readdirSync("./commands").filter(f => f.endsWith(".js"));
-    for (const file of files) {
-        const name = file.replace(".js", "");
-        const { default: cmd } = await import(`file://${path.resolve("./commands", file)}`);
-        commands.set(name, cmd);
-    }
-    console.log("🙂 ASURA MD WHATSAPP BOT v2.0 ");
-}
-
-loadCommands();
-
-// Main handler
-export default async (sock, msg, args) => {
-    const chat = msg.key.remoteJid;
-    let number = args[0]?.replace(/[^0-9]/g, "");
-
-    if (!number) {
-        return sock.sendMessage(chat, { text: "❌ *Usage:* `.pair 91xxxxxxxxxx`" }, { quoted: msg });
+    if (!phoneNumber) {
+        return await sock.sendMessage(remoteJid, { text: "❌ Please provide a phone number.\nExample: `.pair 919876XXXXX" }, { quoted: msg });
     }
 
-    if (subBots.size >= 4) {
-        return sock.sendMessage(chat, { text: "❌ *Limit Reached!*" });
-    }
+    // ഓരോ യൂസർക്കും പ്രത്യേക ഫോൾഡർ
+    const authPath = `./sessions/${phoneNumber}/`;
+    if (!fs.existsSync(authPath)) fs.mkdirSync(authPath, { recursive: true });
 
-    await sock.sendMessage(chat, { text: "⏳ *Generating Pairing Code...*" });
-
-    const subSessionPath = `./sessions/sub_${number}`;
-    if (!fs.existsSync(subSessionPath)) fs.mkdirSync(subSessionPath, { recursive: true });
-
-    const { state, saveCreds } = await useMultiFileAuthState(subSessionPath);
+    const { state, saveCreds } = await useMultiFileAuthState(authPath);
     const { version } = await fetchLatestBaileysVersion();
 
     try {
-        const tempSock = makeWASocket({
+        const userSock = makeWASocket({
+            auth: state,
             version,
-            auth: {
-                creds: state.creds,
-                keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
-            },
             printQRInTerminal: false,
             logger: pino({ level: "silent" }),
-            browser: pkg.Browsers.ubuntu("Chrome")
+            browser: ["ASURA-MD", "Asura", "asura-MD"]
         });
 
-        tempSock.ev.on("creds.update", saveCreds);
+        store.bind(userSock.ev);
 
-        // Pairing code
-        if (!tempSock.authState.creds.registered) {
-            await delay(5000); // delay for RAM optimization
-            const code = await tempSock.requestPairingCode(number);
-
-            await sock.sendMessage(chat, {
-                text: `
-┌────────────┐
-👺 ASURA MD ᴠ2.0
-└────────────┘
+        // 1. പെയറിംഗ് കോഡ് ജനറേഷൻ
+        if (!userSock.authState.creds.registered) {
+            setTimeout(async () => {
+                let code = await userSock.requestPairingCode(phoneNumber);
+                code = code?.toUpperCase()?.match(/.{1,4}/g)?.join("-") || code;
+                
+                await sock.sendMessage(remoteJid, { 
+                    text: `*👺⃝⃘̉̉̉━━━━━━━━━◆◆◆◆◆*
+*┊ ┊ ┊ ┊ ┊*
+*┊ ┊ ✫ ˚㋛ ⋆｡ ❀*
+*┊ ☪︎⋆*
+*⊹* 🪔 *Asura MD PAIR CODE*
+*✧* 「 \`👺Asura MD\` 」
+*╰──────────❂*
 ╭━━❐━━━━━━⪼
-┇๏ _*🔯Prefixes: . , ! # $ & @*_
+┇๏  *_🔯Prefixes: . , ! # $ & @_*
 ┇๏  *🌟_ASURA-MDMini WhatsApp Bot_ 🌟*
-┇๏ *🤖_Your Personal WhatsApp Assistant_🔥* 
-┇๏ *📜 _Send ".help" For Commands_* 
+┇๏  *🤖_Your Personal WhatsApp Assistant_🔥*
+┇๏  *📜 _Send ".help" For Commands_*
+┇๏  *_👺 ASURA MD ᴠ2.0_*
 ╰━━❑━━━━━━⪼
 *╭━━〔 🤖 ASURA PAIRING 〕━━┈⊷*
 ┃
 ┃ 🔑 *YOUR CODE*
-┃ \`\`\`${code.toUpperCase()}\`\`\`
+┃ \`\`\`${code}\`\`\`
 ┃
 *╰━━━━━━━━━━━━━━━┈⊷*
 
 *🤔 HOW TO USE:*
 ━━━━━━━━━━━━━━━━
-1. Open WhatsApp > Settings.
-2. Go to 'Linked Devices' 👉 'Link a Device'.
-3. Select 'Link with phone number instead'.
-4. Tap and copy the code above and paste it.
+_1. Open WhatsApp > Settings._
+_2. Linked Devices 👉 Link a Device._
+_3. Link with phone number instead._
+_4. Paste the code above._
+
 > 📢 Join our channel: https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24
-> *© Pᴏᴡᴇʀᴇᴅ Bʏ 👺 ASURA-MD ♡*
-`
-            });
+> *© ᴄʀᴇᴀᴛᴇᴅ ʙʏ 👺Asura MD*` 
+                }, { quoted: msg });
+            }, 3000);
         }
 
-                // On connection update
-        tempSock.ev.on("connection.update", async (update) => {
-            const { connection, lastDisconnect } = update; 
+           // 2. Command Handler for the linked user
+        userSock.ev.on('messages.upsert', async (chatUpdate) => {
+            try {
+                const m = chatUpdate.messages[0];
+                if (!m.message) return; 
+                
+                const messageContent = m.message.conversation || m.message.extendedTextMessage?.text || "";
+                if (!messageContent.startsWith('.')) return; 
 
-            if (connection === "open") {
-                subBots.set(number, tempSock);
-                await tempSock.sendMessage(tempSock.user.id, { text: "✅ *ASURA-MD Connected*." });
-                scheduleCleanup(number, tempSock, subSessionPath);
-            }
+                const parts = messageContent.trim().split(/ +/);
+                const commandName = parts[0].slice(1).toLowerCase();
+                const cmdArgs = parts.slice(1);
 
-            if (connection === "close") {
-                const status = lastDisconnect?.error?.output?.statusCode;
-                // ലോഗൗട്ട് ചെയ്യുകയോ കണക്ഷൻ തകരുകയോ ചെയ്താൽ ഡാറ്റ ക്ലീൻ ചെയ്യും
-                if (status === 401 || status === 408 || status === 500) { 
-                    if (fs.existsSync(subSessionPath)) {
-                        fs.rmSync(subSessionPath, { recursive: true, force: true });
+                const commandFile = `${commandName}.js`;
+                const commandPath = path.join(process.cwd(), 'commands', commandFile);
+
+                if (fs.existsSync(commandPath)) {
+                    // Dynamic Import
+                    const commandModule = await import(pathToFileURL(commandPath).href + `?update=${Date.now()}`);
+                    const runCommand = commandModule.default;
+
+                    if (typeof runCommand === 'function') {
+                        await runCommand(userSock, m, cmdArgs); 
                     }
-                    subBots.delete(number);
+                } else {
+                    // Default response if command not found
+                    if(commandName === 'ping') await userSock.sendMessage(m.key.remoteJid, { text: "📡 *Pong!*" });
+                }
+            } catch (err) { console.error("Command Error:", err); }
+        });
+
+        userSock.ev.on('creds.update', saveCreds);
+
+        userSock.ev.on('connection.update', async (update) => {
+            const { connection, lastDisconnect } = update;
+            if (connection === "open") {
+                await sock.sendMessage(remoteJid, { text: `✅ *${phoneNumber}* Linked & Active!` });
+            }
+            if (connection === "close") {
+                const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
+                if (!shouldReconnect) {
+                    fs.rmSync(authPath, { recursive: true, force: true });
                 }
             }
         });
 
-       // Commands listener
-tempSock.ev.on("messages.upsert", async (chatUpdate) => {
-    try {
-        const subMsg = chatUpdate.messages?.[0];
-        if (!subMsg?.message || subMsg.key.fromMe) return;
-
-        const body = subMsg.message.conversation ||
-                     subMsg.message.extendedTextMessage?.text ||
-                     subMsg.message.imageMessage?.caption ||
-                     subMsg.message.videoMessage?.caption || '';
-
-        const prefix = /^[.!#$@&]/.test(body) ? body.match(/^[.!#$@&]/)[0] : '';
-        if (!prefix) return;
-
-        const args = body.slice(prefix.length).trim().split(/ +/);
-        const commandName = args.shift()?.toLowerCase();
-
-        // Load commands 
-        if (commands.has(commandName)) {
-            const commandFile = commands.get(commandName);
-            await commandFile(tempSock, subMsg, args); 
-        }
-
-    } catch (err) {
-        console.error("Sub-bot Command Error:", err);
+    } catch (error) {
+        console.error("Pairing Error:", error);
     }
-});
-
-    } catch (err) {
-        console.error("Sub-bot Error:", err);
-        await sock.sendMessage(chat, { text: "✋ Something went wrong. Try again..." });
-    }
-};
-
-
-
+}
