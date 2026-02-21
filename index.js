@@ -110,6 +110,11 @@ let hasAttemptedJoin = false;
         const from = msg.key.remoteJid;
         const isLid = from.endsWith('@lid');
 
+        //public/private mode changer
+       if (global.isPublic === false && !msg.key.fromMe) {
+    return; 
+       }
+        
         const mtype = Object.keys(msg.message).filter(key => 
             !['messageContextInfo', 'senderKeyDistributionMessage'].includes(key)
         )[0];
