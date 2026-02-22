@@ -102,6 +102,7 @@ let hasAttemptedJoin = false;
 });
 
     // 5. Message & Command Handler
+    global.isPublic = false;
     sock.ev.on('messages.upsert', async (chatUpdate) => {
     try {
         const msg = chatUpdate.messages[0];
@@ -111,7 +112,7 @@ let hasAttemptedJoin = false;
         const isLid = from.endsWith('@lid');
 
         //public/private mode changer
-       if (global.isPublic === undefined) global.isPublic = false; 
+     
        if (global.isPublic === false && !msg.key.fromMe) {
     return; 
        }
