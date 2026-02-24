@@ -1,8 +1,8 @@
-name: Build and Publish Docker Image
+name: Build and Publish Docker Image.
 
 on:
   push:
-    branches: [ "main" ] # നിങ്ങളുടെ മെയിൻ ബ്രാഞ്ച് പേര്
+    branches: [ "main" ] 
 
 jobs:
   build:
