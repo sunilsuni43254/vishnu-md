@@ -1,6 +1,7 @@
+
 FROM node:lts-buster
 
-# install system packages
+# system packages install
 RUN apt-get update && \
   apt-get install -y ffmpeg imagemagick webp && \
   apt-get upgrade -y && \
@@ -8,10 +9,12 @@ RUN apt-get update && \
 
 WORKDIR /root/asura-md
 
-# copy image file
+#copy packages 
 COPY package.json .
-RUN npm install
+RUN npm install --network-timeout 100000
+
+# copy 
 COPY . .
 
-# bot start commands
-CMD ["node", "index.js", "npm start", "start.js"]
+# start command
+CMD ["node", "--max-old-space-size=1024", "index.js"]
