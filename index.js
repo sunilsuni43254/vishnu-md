@@ -78,7 +78,7 @@ let hasAttemptedJoin = false;
       ┃👤 OWNER: arun.°Cumar
       ┃⚙️ MODE: Public
       ┃📌 PREFIX: [ .,!#$@ ]
-      ┃⏰ TIME:
+      ┃⏰ TIME: {time} , {date}
       ┃🤖 BOT Connected Successfully!
       ╰━━━━━━━━━━━━━━━╯
          *The Underworld is Active!* 👺`,
