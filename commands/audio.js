@@ -87,42 +87,25 @@ export default async (sock, msg, args) => {
             return new Promise((resolve, reject) => {
                 const inputStream = new PassThrough();
                 inputStream.end(buffer);
-                const outputStream = new PassThrough();
                 const chunks = [];
                 ffmpeg(inputStream)
                     .toFormat('mp3')
                     .audioBitrate('128k')
                     .on('error', reject)
-                    .pipe(outputStream);
-                  outputStream.on('data', chunk => chunks.push(chunk));
-        outputStream.on('end', () => resolve(Buffer.concat(chunks)));
-    });
-};
+                    .pipe()
+                    .on('data', chunk => chunks.push(chunk))
+                    .on('end', () => resolve(Buffer.concat(chunks)));
+            });
+        };
+
         const finalBuffer = await convertAudio(inputBuffer);
 
         // 5. Send Audio
-        try {
-    const response = await axios({
-        method: 'get',
-        url: video.thumbnail,
-        responseType: 'stream'
-    });
- 
-    await sock.sendMessage(chat, {
-        audio: finalBuffer, 
-        mimetype: 'audio/mpeg',
-        fileName: `${video.title}.mp3`,
-        ptt: true, 
-        contextInfo: {
-            externalAdReply: {
-                title: video.title,
-                body: 'Asura-MD Music Downloader',
-                thumbnailUrl: video.thumbnail, 
-                mediaType: 1,
-                renderLargerThumbnail: true,
-                sourceUrl: 'https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24'
-              }
-           }  
+        await sock.sendMessage(chat, {
+            audio: finalBuffer,
+            mimetype: 'audio/mpeg',
+            fileName: `${video.title}.mp3`,
+            ptt: false
         }, { quoted: msg });
 
         await sock.sendMessage(chat, { react: { text: "✅", key: msg.key } });
