@@ -1,3 +1,4 @@
+
 import fs from 'fs';
 
 export default async (sock, msg, args) => {
@@ -50,7 +51,7 @@ export default async (sock, msg, args) => {
         }
 
         // 3. Ads)
-        const groupLink = "https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24";
+        const groupLink = "https://chat.whatsapp.com/LdNb1Ktmd70EwMJF3X6xPD";
         const channelLink = "https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24";
         
         const adMsg = `🏮 *Join our Community:*
@@ -63,13 +64,20 @@ Stay updated with Asura MD
         await sock.sendMessage(chat, { 
             text: adMsg,
             contextInfo: {
-                externalAdReply: {
-                    title: "👺 ASURA MD OFFICIAL CHANNEL",
-                    body: "Click to Follow our Channel! ✨",
-                    mediaType: 1,
-                    sourceUrl: channelLink, 
-                    showAdAttribution: false,
-                    renderLargerThumbnail: true 
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363422992896382@newsletter',
+            newsletterName: '👺 ASURA-MD', 
+            serverMessageId: 143
+               },             
+        forwardingScore: 999,
+        externalAdReply: {
+            title: 'ASURA-MD IS ACTIVE',
+            body: 'The Underworld Bot',
+            thumbnail: fs.readFileSync(imagePath),
+            sourceUrl: 'https://whatsapp.com/channel/0029VbB59W9GehENxhoI5l24',
+            mediaType: 1,
+            renderLargerThumbnail: true 
                 }
             }
         });
@@ -78,3 +86,4 @@ Stay updated with Asura MD
         console.error("Alive Error:", e);
     }
 };
+
