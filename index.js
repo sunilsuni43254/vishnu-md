@@ -151,8 +151,7 @@ if (hasLink && isGroup && !msg.key.fromMe) {
 
         // 2. വാണിംഗ് നൽകുന്നു
         await sock.sendMessage(from, { 
-            text: `await sock.sendMessage(from, { 
-    text: `👋 *@${sender.split('@')[0]}*, please avoid sending links here. Let’s keep the group clean and spam-free. Thanks! 😊`,
+          text: `👋 *@${sender.split('@')[0]}*, please avoid sending links here. Let’s keep the group clean and spam-free. Thanks! 😊`,
     mentions: [sender]
 }, { quoted: msg });    
       });
